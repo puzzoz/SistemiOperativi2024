@@ -14,7 +14,7 @@ Divisione funzioni:
 - **insertProcQ(struct list_head* head, pcb_t* p)** – Inserisce un PCB in una coda di processi, una funzione di manipolazione della lista che non è troppo complessa.
 - **mkEmptyProcQ(struct list_head* head)** - Creare una coda vuota di processi è una semplice inizializzazione di una lista.
 
-**Gruppo 2: Gestione dei processi bloccati -**
+**Gruppo 2: Gestione dei processi bloccati - Eric**
 - **insertBlocked(int* semAdd, pcb_t* p)** – Inserisce un PCB in una lista di processi bloccati associata a un semaforo.
 - **removeBlocked(int* semAdd)** – Rimuove un PCB dalla lista dei bloccati associata a un semaforo.
 - **headBlocked(int* semAdd)** – Restituisce il primo PCB dalla lista di bloccati di un semaforo, un'operazione di lettura della testa della lista.
