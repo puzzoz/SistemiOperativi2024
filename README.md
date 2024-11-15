@@ -8,13 +8,13 @@ mkdir -p build && pushd build && cmake .. && make && popd
 Divisione funzioni:
 
 **Gruppo 1: Inizializzazione e gestione base dei PCB - Elena**
-- **initASL()** – Inizializza la struttura dati dell'ASL (Active Semaphore List). Questa funzione è probabilmente legata alla configurazione iniziale e quindi meno complessa.
 - **initPcbs()** – Inizializza i PCB. Analogamente all'inizializzazione dell'ASL, questa funzione si occupa di preparare la struttura per i PCB.
 - **freePcb(pcb_t* p)** – Dealloca un PCB. Si occupa di liberare la memoria associata a un processo, un'operazione di gestione delle risorse.
 - **insertProcQ(struct semAdd* head, pcb_t* p)** – Inserisce un PCB in una coda di processi, una funzione di manipolazione della lista che non è troppo complessa.
 - **mkEmptyProcQ(struct semAdd* head)** - Creare una coda vuota di processi è una semplice inizializzazione di una lista.
 
-**Gruppo 2: Gestione dei processi bloccati - Eric**
+**Gruppo 2: Gestione dei semafori - Eric**
+- **initASL()** – Inizializza la struttura dati dell'ASL (Active Semaphore List). Questa funzione è probabilmente legata alla configurazione iniziale e quindi meno complessa.
 - **insertBlocked(int* semAdd, pcb_t* p)** – Inserisce un PCB in una lista di processi bloccati associata a un semaforo.
 - **removeBlocked(int* semAdd)** – Rimuove un PCB dalla lista dei bloccati associata a un semaforo.
 - **headBlocked(int* semAdd)** – Restituisce il primo PCB dalla lista di bloccati di un semaforo, un'operazione di lettura della testa della lista.
