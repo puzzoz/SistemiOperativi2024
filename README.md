@@ -21,7 +21,7 @@ Divisione funzioni:
 - **outBlockedPid(int pid)** – Rimuove un processo dalla lista dei bloccati usando l'ID del processo, una funzione di rimozione basata su un criterio specifico.
 - **emptyProcQ(struct list_head* head)** - Verificare se una coda è vuota è un'operazione diretta di controllo delle condizioni sulla lista.
 
-**Gruppo 3: Gestione dei processi figli -**
+**Gruppo 3: Gestione dei processi figli - Mattia T.**
 - **emptyChild(pcb_t* p)** – Verifica se un processo ha figli. Un'operazione di controllo della lista dei figli.
 - **insertChild(pcb_t* prnt, pcb_t* p)** – Inserisce un PCB come figlio di un altro processo. Si tratta di una manipolazione della lista dei figli.
 - **removeChild(pcb_t* p)** – Rimuove un figlio da un processo. Gestisce la rimozione da una lista dei figli.
