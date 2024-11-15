@@ -7,7 +7,7 @@ mkdir -p build && pushd build && cmake .. && make && popd
 
 Divisione funzioni:
 
-**Gruppo 1: Inizializzazione e gestione base dei PCB -**
+**Gruppo 1: Inizializzazione e gestione base dei PCB - Elena**
 - **initASL()** – Inizializza la struttura dati dell'ASL (Active Semaphore List). Questa funzione è probabilmente legata alla configurazione iniziale e quindi meno complessa.
 - **initPcbs()** – Inizializza i PCB. Analogamente all'inizializzazione dell'ASL, questa funzione si occupa di preparare la struttura per i PCB.
 - **freePcb(pcb_t* p)** – Dealloca un PCB. Si occupa di liberare la memoria associata a un processo, un'operazione di gestione delle risorse.
