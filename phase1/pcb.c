@@ -5,21 +5,39 @@ static pcb_t pcbFree_table[MAXPROC];
 static int next_pid = 1;
 
 void initPcbs() {
+    //inizializza la pcbFree list, contiene tutti gli elementi dell'array statico MAXPROC PCBs
+    for(int i=0; i<MAXPROC; i++){
+        INIT_LIST_HEAD(&pcbFree_table[i].p_list);   //inizializzo il nodo p_list (inizializza la testa della lista circolare)
+        list_add_tail(&pcbFree_table[i], &pcbFree_h);
+        //pcbFree_table[i].p_pid=next_pid++;  //inizializza il PID (opzionale, utile se voglio distinguere i pcb)
+    }
 }
 
 void freePcb(pcb_t* p) {
+    //inserisce l'elemento puntato da p sulla lista pcbFree
+    //usata dai pcbs che non vengono piu' usati
+    list_add_tail(&p->p_list, &pcbFree_h);
 }
 
 pcb_t* allocPcb() {
 }
 
 void mkEmptyProcQ(struct list_head* head) {
+    // metodo usato per inizializzare una variabile per essere un head pointer ad un processo queue
+    INIT_LIST_HEAD(head);
 }
 
 int emptyProcQ(struct list_head* head) {
 }
 
 void insertProcQ(struct list_head* head, pcb_t* p) {
+    //inserisce il PCB puntato da p nella coda dei processi, la quale testa e' puntata da head
+    struct list_head* last=head->prev;  //trovo l'ultimo nodo della lista
+    //aggiorno i puntatori
+    p->p_list.next=head;    //il prossimo nodo di p e' head
+    p->p_list.prev=last;    //il nodo precedene di p e' last
+    last->next=&p->p_list;  //aggiorno last e head
+    head->prev=&p->p_list;
 }
 
 pcb_t* headProcQ(struct list_head* head) {
