@@ -24,14 +24,14 @@ pcb_t* allocPcb() {
         //recupera il primo PCB libero della lista, prende il puntatore alla struttura pcb_t del primo elemento della lista
         pcb_t *p = container_of((&pcbFree_h)->next, pcb_t, p_list);
         //rimuove il primo elemento della lista dei PCB liberi, aggiornando poi la lista
-        list_del((&pbcFree_h)->next);
+        list_del((&pcbFree_h)->next);
 
         //inizializzo la coda dei processi child e siblings
         INIT_LIST_HEAD(&(p->p_list)); //prima inizializzo p_list come lista vuota
         INIT_LIST_HEAD(&(p->p_child)); //poi inizializzo la lista dei figli
 
         //imposto il padre del PCB a NULL perchè è il primo PCB
-        p->parent = NULL;
+        p->p_parent = NULL;
         //inizializzo la lista dei sibling
         INIT_LIST_HEAD(&(p->p_sib));
 
@@ -41,7 +41,7 @@ pcb_t* allocPcb() {
         p->p_s.status = 0;      //stato processo (in esecuzione, terminato, sospeso etc)
         p->p_s.pc_epc = 0;      //program counter e exeption p.c.
 
-        for (int i = 0; i < sizeof(p->s.gpr) / sizeof(p->p_s.gpr[0]); i++){
+        for (int i = 0; i < sizeof(p->p_s.gpr) / sizeof(p->p_s.gpr[0]); i++){
             p->p_s.gpr[i] = 0;  //azzero i registri generali del processo
         }
 
@@ -126,7 +126,7 @@ int emptyChild(pcb_t* p) {
 
 void insertChild(pcb_t* prnt, pcb_t* p) {
     //per prima cosa setto prnt come genitore di p
-    p->parent = prnt; 
+    p->p_parent = prnt;
     //se la lista dei figli è vuota
     if (emptyChild(prnt))
         //aggiungo semplicemnte come primo elemento (linkando i siblings se ci sono)
@@ -143,18 +143,18 @@ pcb_t* removeChild(pcb_t* p) {
     else {
         //risalgo al primo figlio utilizando i fratelli 
         pcb_t *first_child = container_of(list_next(&(p->p_child)), pcb_t, p_sib);
-        list_del(&(first_child->p_sib)) //rimuovo dalla lista dei siblings
-        first_child->p_parent = NULL //elimino il puntatore dal figlio al padre
+        list_del(&(first_child->p_sib)); //rimuovo dalla lista dei siblings
+        first_child->p_parent = NULL; //elimino il puntatore dal figlio al padre
         
-        return first_child //ritorno il child eliminato
+        return first_child; //ritorno il child eliminato
     }
 }
 
 pcb_t* outChild(pcb_t* p) {
-    if (p->p_prnt == NULL) return NULL;
+    if (p->p_parent == NULL) return NULL;
     else {
         list_del(&(p->p_sib)); //rimuovo dalla lista dei siblings
         p->p_parent = NULL; //elimino il puntatore dal figlio al padre
-        return p //ritorno il p
+        return p; //ritorno il p
     }
 }
