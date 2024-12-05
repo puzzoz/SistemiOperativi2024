@@ -19,6 +19,49 @@ void freePcb(pcb_t* p) {
 }
 
 pcb_t* allocPcb() {
+    if (list_empty(&pcbFree_h)) return NULL; //se la lista di PCB disponibili è vuota ritorna NULL
+    else {
+        //recupera il primo PCB libero della lista, prende il puntatore alla struttura pcb_t del primo elemento della lista
+        pcb_t *p = container_of((&pcbFree_h)->next, pcb_t, p_list);
+        //rimuove il primo elemento della lista dei PCB liberi, aggiornando poi la lista
+        list_del((&pbcFree_h)->next);
+
+        //inizializzo la coda dei processi child e siblings
+        INIT_LIST_HEAD(&(p->p_list)); //prima inizializzo p_list come lista vuota
+        INIT_LIST_HEAD(&(p->p_child)); //poi inizializzo la lista dei figli
+
+        //imposto il padre del PCB a NULL perchè è il primo PCB
+        p->parent = NULL;
+        //inizializzo la lista dei sibling
+        INIT_LIST_HEAD(&(p->p_sib));
+
+        //inizializzo i campi di stato del processo, azzero i registri e gli stati
+        p->p_s.entry_hi = 0;    //interruzioni o eccezioni
+        p->p_s.cause = 0;       //cause memorizza il motivo di un'interruzione
+        p->p_s.status = 0;      //stato processo (in esecuzione, terminato, sospeso etc)
+        p->p_s.pc_epc = 0;      //program counter e exeption p.c.
+
+        for (int i = 0; i < sizeof(p->s.gpr) / sizeof(p->p_s.gpr[0]); i++){
+            p->p_s.gpr[i] = 0;  //azzero i registri generali del processo
+        }
+
+        //registi usati per lo operazioni sui numeri a 64 bit
+        p->p_s.hi = 0;
+        p->p_s.lo = 0;
+        //inizializzo il contatore del tempo
+        p->p_time = 0; //tiene traccia del tempo di escuzione del processo
+        //inizializzo la lista della coda dei messaggi in ingresso
+        INIT_LIST_HEAD(&(p->msg_inbox));
+        //imposto il puntatore alla struttura di supporto a NULL
+        p->p_supportStruct = NULL;
+        //imposto il process id a 0, poichè primo
+        p->p_pid = 0;
+        //numero dispostivo generico (nessun dispotivio)
+        p->dev_no = -1;
+        p->from = 0;
+        return p;
+    }
+
 }
 
 void mkEmptyProcQ(struct list_head* head) {
@@ -75,14 +118,43 @@ pcb_t* outProcQ(struct list_head* head, pcb_t* p) {
 
 //verifico se un Processo ha figli
 int emptyChild(pcb_t* p) {
+    //l'output è il risultato della verifica di list empty che prende come 
+    //parametro l'indirzzo (con &) della testa della lista p_child puntata da p
     return (list_empty(&p->p_child));
+    //true (1) se vuota, false (0) altrimenti
 }
 
 void insertChild(pcb_t* prnt, pcb_t* p) {
+    //per prima cosa setto prnt come genitore di p
+    p->parent = prnt; 
+    //se la lista dei figli è vuota
+    if (emptyChild(prnt))
+        //aggiungo semplicemnte come primo elemento (linkando i siblings se ci sono)
+        list_add(&(p->p_sib), &(prnt->p_child));
+    //altrimenti
+    else
+        //aggiungo alla fine, preservando la FIFO (linkando sempre i siblings)
+        list_add_tail(&(p->p_sib), &(prnt->p_child));
 }
 
 pcb_t* removeChild(pcb_t* p) {
+    //se la lista dei figli è vuota non devo togliere nulla
+    if (emptyChild(p)) return NULL;
+    else {
+        //risalgo al primo figlio utilizando i fratelli 
+        pcb_t *first_child = container_of(list_next(&(p->p_child)), pcb_t, p_sib);
+        list_del(&(first_child->p_sib)) //rimuovo dalla lista dei siblings
+        first_child->p_parent = NULL //elimino il puntatore dal figlio al padre
+        
+        return first_child //ritorno il child eliminato
+    }
 }
 
 pcb_t* outChild(pcb_t* p) {
+    if (p->p_prnt == NULL) return NULL;
+    else {
+        list_del(&(p->p_sib)); //rimuovo dalla lista dei siblings
+        p->p_parent = NULL; //elimino il puntatore dal figlio al padre
+        return p //ritorno il p
+    }
 }
