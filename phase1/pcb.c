@@ -9,7 +9,6 @@ void initPcbs() {
     for(int i=0; i<MAXPROC; i++){
         INIT_LIST_HEAD(&pcbFree_table[i].p_list);   //inizializzo il nodo p_list (inizializza la testa della lista circolare)
         list_add_tail(&pcbFree_table[i], &pcbFree_h);
-        //pcbFree_table[i].p_pid=next_pid++;  //inizializza il PID (opzionale, utile se voglio distinguere i pcb)
     }
 }
 
