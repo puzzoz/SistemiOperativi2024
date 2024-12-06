@@ -35,30 +35,16 @@ pcb_t* allocPcb() {
         //inizializzo la lista dei sibling
         INIT_LIST_HEAD(&(p->p_sib));
 
-        //inizializzo i campi di stato del processo, azzero i registri e gli stati
-        p->p_s.entry_hi = 0;    //interruzioni o eccezioni
-        p->p_s.cause = 0;       //cause memorizza il motivo di un'interruzione
-        p->p_s.status = 0;      //stato processo (in esecuzione, terminato, sospeso etc)
-        p->p_s.pc_epc = 0;      //program counter e exeption p.c.
-
-        for (int i = 0; i < sizeof(p->p_s.gpr) / sizeof(p->p_s.gpr[0]); i++){
-            p->p_s.gpr[i] = 0;  //azzero i registri generali del processo
-        }
-
-        //registi usati per lo operazioni sui numeri a 64 bit
-        p->p_s.hi = 0;
-        p->p_s.lo = 0;
-        //inizializzo il contatore del tempo
-        p->p_time = 0; //tiene traccia del tempo di escuzione del processo
-        //inizializzo la lista della coda dei messaggi in ingresso
-        INIT_LIST_HEAD(&(p->msg_inbox));
-        //imposto il puntatore alla struttura di supporto a NULL
+        //inizializzazione dei campi
+        p->p_parent = NULL;
+        p->p_child = NULL;
+        p->p_sib = NULL;
+        p->p_s = 0; //in teoria p_s dovrebbe avere altri membri che però non sono definiti in nessun file .h quindi non so...
+        p->p_time = 0;
+        p->p_semAdd = NULL;
         p->p_supportStruct = NULL;
-        //imposto il process id a 0, poichè primo
         p->p_pid = 0;
-        //numero dispostivo generico (nessun dispotivio)
-        p->dev_no = -1;
-        p->from = 0;
+        
         return p;
     }
 
