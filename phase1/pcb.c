@@ -1,14 +1,24 @@
+#include <stddef.h>
 #include "./headers/pcb.h"
 
 static struct list_head pcbFree_h;
 static pcb_t pcbFree_table[MAXPROC];
 static int next_pid = 1;
 
+void *memcpy(void *dest, const void *src, size_t n)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        ((char*)dest)[i] = ((char*)src)[i];
+    }
+}
+
 void initPcbs() {
     //inizializza la pcbFree list, contiene tutti gli elementi dell'array statico MAXPROC PCBs
-    for(int i=0; i<MAXPROC; i++){
+    INIT_LIST_HEAD(&pcbFree_h);
+    for (int i=0; i<MAXPROC; i++){
         INIT_LIST_HEAD(&pcbFree_table[i].p_list);   //inizializzo il nodo p_list (inizializza la testa della lista circolare)
-        list_add_tail(&pcbFree_table[i], &pcbFree_h);
+        list_add_tail(&pcbFree_table[i].p_list, &pcbFree_h);
     }
 }
 
@@ -37,9 +47,9 @@ pcb_t* allocPcb() {
 
         //inizializzazione dei campi
         p->p_parent = NULL;
-        p->p_child = NULL;
-        p->p_sib = NULL;
-        p->p_s = 0; //in teoria p_s dovrebbe avere altri membri che però non sono definiti in nessun file .h quindi non so...
+        state_t newState;
+        newState.status = 0;
+        p->p_s = newState; //in teoria p_s dovrebbe avere altri membri che però non sono definiti in nessun file .h quindi non so...
         p->p_time = 0;
         p->p_semAdd = NULL;
         p->p_supportStruct = NULL;
