@@ -4,6 +4,15 @@
 #include "../../headers/listx.h"
 #include "../../headers/types.h"
 
+// macro che fa ritornare NULL alla funzione in cui viene usata se var è NULL
+#define invariant(var) if (var == NULL) return NULL;
+// macro che ritorna il processo che contiene la lista pcbLAdd
+#define getPcb(pcbLAdd) container_of(pcbLAdd, pcb_t, p_list)
+
+// inizializza un ciclo su una lista di processi
+#define for_each_pcb(head) pcb_t *curr; list_for_each_entry(curr, head, p_list)
+
+
 void initPcbs();
 void freePcb(pcb_t* p);
 pcb_t* allocPcb();

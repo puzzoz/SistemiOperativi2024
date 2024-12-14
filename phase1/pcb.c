@@ -5,6 +5,8 @@ static struct list_head pcbFree_h;
 static pcb_t pcbFree_table[MAXPROC];
 static int next_pid = 1;
 
+// necessario alla compilazione (in alternativa gestire linking con ld
+// e parametro -nostdlib in CMakeLists.txt)
 void *memcpy(void *dest, const void *src, size_t n)
 {
     for (size_t i = 0; i < n; i++)
@@ -12,6 +14,13 @@ void *memcpy(void *dest, const void *src, size_t n)
         ((char*)dest)[i] = ((char*)src)[i];
     }
 }
+
+/*
+ * utilities per i breakpoint
+ */
+void bp() {} // una chiamata a questa funzione definisce un breakpoint
+#define BP bp(); // ridefinizione più concisa di un breakpoint
+#define BPS(s) klog_print(s); BP // definisce un breakpoint che logga sul klog_buffer
 
 void initPcbs() {
     //inizializza la pcbFree list, contiene tutti gli elementi dell'array statico MAXPROC PCBs
@@ -32,7 +41,7 @@ pcb_t* allocPcb() {
     if (list_empty(&pcbFree_h)) return NULL; //se la lista di PCB disponibili è vuota ritorna NULL
     else {
         //recupera il primo PCB libero della lista, prende il puntatore alla struttura pcb_t del primo elemento della lista
-        pcb_t *p = container_of((&pcbFree_h)->next, pcb_t, p_list);
+        pcb_t *p = getPcb((&pcbFree_h)->next);
         //rimuove il primo elemento della lista dei PCB liberi, aggiornando poi la lista
         list_del((&pcbFree_h)->next);
 
@@ -72,12 +81,7 @@ int emptyProcQ(struct list_head* head) {
 
 void insertProcQ(struct list_head* head, pcb_t* p) {
     //inserisce il PCB puntato da p nella coda dei processi, la quale testa e' puntata da head
-    struct list_head* last=head->prev;  //trovo l'ultimo nodo della lista
-    //aggiorno i puntatori
-    p->p_list.next=head;    //il prossimo nodo di p e' head
-    p->p_list.prev=last;    //il nodo precedene di p e' last
-    last->next=&p->p_list;  //aggiorno last e head
-    head->prev=&p->p_list;
+    list_add_tail(&p->p_list, head);
 }
 
 //Restituisce il primo PCB dalla coda dei processi.
@@ -85,7 +89,7 @@ pcb_t* headProcQ(struct list_head* head) {
     if (list_empty(head)) // Verifica se la lista è vuota.
         return NULL;
     else{
-        return container_of(head->next,pcb_t,p_list); //Restituisce il puntatore al primo elemento successivo a head
+        return getPcb(head->next); //Restituisce il puntatore al primo elemento successivo a head
     }
 }
 
@@ -94,7 +98,7 @@ pcb_t* removeProcQ(struct list_head* head) {
         if (list_empty(head)) // Verifica se la lista è vuota.
             return NULL;
         else {
-            pcb_t* p= container_of(head->next,pcb_t,p_list); //Restituisce il puntatore al primo elemento successivo a head
+            pcb_t* p= headProcQ(head); //Restituisce il puntatore al primo elemento successivo a head
             list_del(&p->p_list); //Rimuove il puntatore dalla lista
             return p; //Ritorno la lista
         }
@@ -102,9 +106,8 @@ pcb_t* removeProcQ(struct list_head* head) {
 
 //Rimuove un PCB specifico dalla coda
 pcb_t* outProcQ(struct list_head* head, pcb_t* p) {
-    struct list_head* pos;
-    list_for_each(pos,head){   //Ciclo la lista
-        if (container_of(pos,pcb_t,p_list)==p){   //Vedo se il PCB trovato è uguale a quello specifico
+    for_each_pcb(head){   //Ciclo la lista
+        if (curr == p) {   //Vedo se il PCB trovato è uguale a quello specifico
             list_del(&p->p_list); //lo rimuovo dalla lista
             return p;   //Ritorno la lista con il PCB rimosso
         }
@@ -123,14 +126,8 @@ int emptyChild(pcb_t* p) {
 void insertChild(pcb_t* prnt, pcb_t* p) {
     //per prima cosa setto prnt come genitore di p
     p->p_parent = prnt;
-    //se la lista dei figli è vuota
-    if (emptyChild(prnt))
-        //aggiungo semplicemnte come primo elemento (linkando i siblings se ci sono)
-        list_add(&(p->p_sib), &(prnt->p_child));
-    //altrimenti
-    else
-        //aggiungo alla fine, preservando la FIFO (linkando sempre i siblings)
-        list_add_tail(&(p->p_sib), &(prnt->p_child));
+    //aggiungo alla fine, preservando la FIFO (linkando sempre i siblings)
+    list_add_tail(&(p->p_sib), &(prnt->p_child));
 }
 
 pcb_t* removeChild(pcb_t* p) {
