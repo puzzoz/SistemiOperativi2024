@@ -13,6 +13,12 @@
 #define for_each_pcb(head) pcb_t *curr; list_for_each_entry(curr, head, p_list)
 
 
+/*
+ * utilities per i breakpoint
+ */
+void bp(); // una chiamata a questa funzione definisce un breakpoint (da configurare su uriscv)
+#define BP bp(); // ridefinizione più concisa di un breakpoint
+
 void initPcbs();
 void freePcb(pcb_t* p);
 pcb_t* allocPcb();

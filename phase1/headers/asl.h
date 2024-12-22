@@ -4,10 +4,6 @@
 #include "../../headers/listx.h"
 #include "../../headers/types.h"
 
-void bp();
-char* itoa(int value, char* result, int base);
-#define BP bp();
-
 void initASL();
 int insertBlocked(int* semAdd, pcb_t* p);
 pcb_t* removeBlocked(int* semAdd);

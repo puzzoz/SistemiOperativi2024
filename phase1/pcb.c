@@ -15,12 +15,7 @@ void *memcpy(void *dest, const void *src, size_t n)
     }
 }
 
-/*
- * utilities per i breakpoint
- */
-void bp() {} // una chiamata a questa funzione definisce un breakpoint
-#define BP bp(); // ridefinizione più concisa di un breakpoint
-#define BPS(s) klog_print(s); BP // definisce un breakpoint che logga sul klog_buffer
+void bp() {}
 
 void initPcbs() {
     //inizializza la pcbFree list, contiene tutti gli elementi dell'array statico MAXPROC PCBs
