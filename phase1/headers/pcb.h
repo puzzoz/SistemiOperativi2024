@@ -9,7 +9,7 @@
 // macro che ritorna il processo che contiene la lista pcbLAdd
 #define getPcb(pcbLAdd) container_of(pcbLAdd, pcb_t, p_list)
 
-// inizializza un ciclo su una lista di processi
+// inizializza un ciclo su una lista di processi con elemento iterativo curr
 #define for_each_pcb(head) pcb_t *curr; list_for_each_entry(curr, head, p_list)
 
 
