@@ -7,7 +7,7 @@ static int next_pid = 1;
 
 // necessario alla compilazione (in alternativa gestire linking con ld
 // e parametro -nostdlib in CMakeLists.txt)
-void *memcpy(void *dest, const void *src, size_t n)
+__attribute__((unused)) void memcpy(void *dest, const void *src, size_t n)
 {
     for (size_t i = 0; i < n; i++)
     {

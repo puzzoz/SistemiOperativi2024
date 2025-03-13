@@ -1,14 +1,9 @@
-#include "./headers/pcb.h"
+#include "headers/asl.h"
+#include "headers/pcb.h"
 
 static semd_t semd_table[MAXPROC];
 static struct list_head semdFree_h;
 static struct list_head semd_h;
-
-// macro che ritorna il semaforo che contiene la lista semLAdd
-#define getSem(semLAdd) container_of(semLAdd, semd_t, s_link)
-
-// inizializza un ciclo su una lista di semafori con elemento iterativo curr
-#define for_each_semd(head) semd_t *curr; list_for_each_entry(curr, head, s_link)
 
 /*
  * ritorna il semaforo con key contenuta in semAdd, NULL se non lo trova
