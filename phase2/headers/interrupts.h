@@ -1,7 +1,3 @@
-//
-// Created by eric on 3/14/25.
-//
-
 #ifndef MULTIPANDOS_INTERRUPTS_H
 #define MULTIPANDOS_INTERRUPTS_H
 

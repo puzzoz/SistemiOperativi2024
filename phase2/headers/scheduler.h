@@ -1,7 +1,3 @@
-//
-// Created by eric on 3/14/25.
-//
-
 #ifndef MULTIPANDOS_SCHEDULER_H
 #define MULTIPANDOS_SCHEDULER_H
 
