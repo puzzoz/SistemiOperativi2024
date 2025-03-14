@@ -57,7 +57,7 @@ pcb_t* allocPcb() {
         p->p_time = 0;
         p->p_semAdd = NULL;
         p->p_supportStruct = NULL;
-        p->p_pid = 0;
+        p->p_pid = next_pid++;
         
         return p;
     }
