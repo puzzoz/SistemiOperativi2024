@@ -1,0 +1,13 @@
+"C:\Users\mtito\AppData\Local\JetBrains\CLion 2023.2.2\bin\cmake\win\x64\bin\cmake.exe" -DCMAKE_BUILD_TYPE=Debug "-DCMAKE_MAKE_PROGRAM=C:/Users/mtito/AppData/Local/JetBrains/CLion 2023.2.2/bin/ninja/win/x64/ninja.exe" -G Ninja -S "C:\Users\mtito\OneDrive\Desktop\appunti uni\secondo anno\sistemi operativi\SistemiOperativi2024" -B "C:\Users\mtito\OneDrive\Desktop\appunti uni\secondo anno\sistemi operativi\SistemiOperativi2024\cmake-build-debug"
+-- Configuring done (2.1s)
+CMake Error at CMakeLists.txt:21 (add_executable):
+  Cannot find source file:
+
+    /usr/local/share/uriscv/crtso.S
+
+
+CMake Error at CMakeLists.txt:21 (add_executable):
+  No SOURCES given to target: MultiPandOS
+
+
+CMake Generate step failed.  Build files cannot be regenerated correctly.

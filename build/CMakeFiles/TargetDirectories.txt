@@ -1,0 +1,4 @@
+/mnt/c/Users/mtito/OneDrive/Desktop/appunti uni/secondo anno/sistemi operativi/SistemiOperativi2024/build/CMakeFiles/MultiPandOS.dir
+/mnt/c/Users/mtito/OneDrive/Desktop/appunti uni/secondo anno/sistemi operativi/SistemiOperativi2024/build/CMakeFiles/MultiPandOSuRISCV.dir
+/mnt/c/Users/mtito/OneDrive/Desktop/appunti uni/secondo anno/sistemi operativi/SistemiOperativi2024/build/CMakeFiles/edit_cache.dir
+/mnt/c/Users/mtito/OneDrive/Desktop/appunti uni/secondo anno/sistemi operativi/SistemiOperativi2024/build/CMakeFiles/rebuild_cache.dir
