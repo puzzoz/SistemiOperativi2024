@@ -8,7 +8,7 @@
 #include "headers/exceptions.h"
 #include "headers/interrupts.h"
 #include "../phase1/headers/pcb.h"
-#include "scheduler.h"
+#include "headers/scheduler.h"
 
 //settaggio TPR
 void setTPR(unsigned int value) {
