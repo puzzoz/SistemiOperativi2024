@@ -2,6 +2,9 @@
 #define MULTIPANDOS_INTERRUPTS_H
 
 #include "headers/interrupts.h"
+#include "../../headers/const.h"
+#include "../../headers/listx.h"
+#include "../../headers/types.h"
 #include <uriscv/liburiscv.h>
 #include <uriscv/cpu.h>
 #include "headers/initial.h"
