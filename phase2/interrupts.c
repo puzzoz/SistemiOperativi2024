@@ -5,9 +5,7 @@
 #include <uriscv/liburiscv.h>
 #include <uriscv/cpu.h>
 #include "headers/initial.h"
-#include "headers/scheduler.h"
 #include "../phase1/headers/pcb.h"
-#include "../phase1/headers/asl.h"
 
 #define DEVICE_BASE_ADDRESS 0x10000054
 #define DEVICES_PER_LINE 8
@@ -16,10 +14,9 @@
 
 // Rimuove e restituisce il primo processo bloccato su un dato device da una lista
 static pcb_t *extractBlockedByDevNo(int device_number, struct list_head *list) {
-    pcb_t *tmp;
-    list_for_each_entry(tmp, list, p_list) {
-        if (tmp->dev_no == device_number)
-            return outProcQ(list, tmp);
+    for_each_pcb(list) {
+        if (curr->dev_no == device_number)
+            return outProcQ(list, curr);
     }
     return NULL;
 }
@@ -31,13 +28,12 @@ static void handlePseudoClockInterrupt(state_t *exception_state) {
 
     pcb_t *unblocked;
 
-    ACQUIRE_LOCK(&Global_Lock);
-    while ((unblocked = removeProcQ(&Locked_pseudo_clock)) != NULL) {
-        send(ssi_pcb, unblocked, 0);
-        insertProcQ(&Ready_Queue, unblocked);
-        soft_blocked_count--;
-    }
-    RELEASE_LOCK(&Global_Lock);
+    MUTEX_GLOBAL(
+        while ((unblocked = removeProcQ(&Locked_pseudo_clock)) != NULL) {
+            send(ssi_pcb, unblocked, 0);
+            insertProcQ(&Ready_Queue, unblocked);
+            soft_blocked_count--;
+    })
 
     if (current_process)
         LDST(exception_state);  // riprende il processo corrente
@@ -52,9 +48,9 @@ static void handlePLTInterrupt(state_t *exception_state) {
     updateCPUtime(current_process);  // aggiorna tempo usato
     saveState(&(current_process->p_s), exception_state);  // salva stato nel PCB
 
-    ACQUIRE_LOCK(&Global_Lock);
-    insertProcQ(&Ready_Queue, current_process);  // lo rimette in ready
-    RELEASE_LOCK(&Global_Lock);
+    MUTEX_GLOBAL(
+        insertProcQ(&Ready_Queue, current_process);  // lo rimette in ready
+    );
 
     scheduler();  // schedula un nuovo processo
 }

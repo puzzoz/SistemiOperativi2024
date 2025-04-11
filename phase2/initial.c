@@ -2,6 +2,7 @@
 #define MULTIPANDOS_INITIAL_H
 
 #include "./headers/initial.h"
+#include "../phase1/headers/asl.h"
 #include "../phase1/headers/pcb.h"
 #include "../headers/types.h"
 #include "../headers/const.h"

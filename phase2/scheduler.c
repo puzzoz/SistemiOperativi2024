@@ -1,12 +1,9 @@
 #ifndef MULTIPANDOS_SCHEDULER_H
 #define MULTIPANDOS_SCHEDULER_H
 
-//togliere/sistemare gli include se necessario (alcune volte non mi riconosceva delle variabili)
-#include "../uriscv/src/include/support/liburiscv/liburiscv.h"  
-#include "../uriscv/src/include/support/liburiscv/const.h"      
+#include <uriscv/liburiscv.h>
+#include <uriscv/const.h>
 #include "headers/initial.h"
-#include "headers/exceptions.h"
-#include "headers/interrupts.h"
 #include "../phase1/headers/pcb.h"
 #include "headers/scheduler.h"
 
