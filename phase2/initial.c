@@ -1,11 +1,10 @@
 #ifndef MULTIPANDOS_INITIAL_H
 #define MULTIPANDOS_INITIAL_H
 
-#include "headers/initial.h"
-#include "./phase1/headers/pcb.h"
-#include "headers/types.h"
-#include "headers/const.h"
-#include "headers/initial.h"
+#include "./headers/initial.h"
+#include "../phase1/headers/pcb.h"
+#include "../headers/types.h"
+#include "../headers/const.h"
 
 #endif //MULTIPANDOS_INITIAL_H
 
