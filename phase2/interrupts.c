@@ -11,7 +11,6 @@
 #include "../phase1/headers/pcb.h"
 
 
-
 // Rimuove e restituisce il primo processo bloccato su un dato device da una lista
 static pcb_t *extractBlockedByDevNo(int device_number, struct list_head *list) {
     for_each_pcb(list) {
