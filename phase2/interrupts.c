@@ -12,6 +12,7 @@
 #include "../phase1/headers/asl.h"
 
 #define PSEUDO_CLOCK_SEM 48
+#define DEVREGADDR(line, no) (RAMBASEADDR + 0x54 + ((line - 3) * DEVREGSIZE * DEVPERINT) + (no * DEVREGSIZE))
 
 // Aggiorna il tempo CPU del processo attuale
 void updateCPUtime(pcb_t* p) {
@@ -32,7 +33,7 @@ static void handlePseudoClockInterrupt(state_t *exception_state) {
     pcb_t *unblocked;
     // Sblocca tutti i processi che aspettavano il clock
     while ((unblocked = removeBlocked(&device_semaphores(0)[1])) != NULL) {
-        unblocked->p_s.reg_v0 = 0;
+        unblocked->p_s.gpr[10] = 0;
         insertProcQ(ready_queue(), unblocked);
         softBlockCount--;
     }
@@ -88,8 +89,8 @@ void handleDeviceInterrupt(int line, int cause, state_t *exception_state) {
 
     // Gestione speciale per i terminali (2 sub-device)
     if (line == IL_TERMINAL) {
-        termreg_t *term = (termreg_t *)DEV_REG_ADDR(line, dev_no);
-        if ((term->transm_status & 0xFF) == DEV_BUSY || (term->transm_status & 0xFF) == DEV_READY) {
+        termreg_t *term = (termreg_t *)DEVREGADDR(line, dev_no);
+        if ((term->transm_status & 0xFF) == BUSY || (term->transm_status & 0xFF) == READY) {
             dev_status = term->transm_status;
             term->transm_command = ACK;
         } else {
@@ -98,7 +99,7 @@ void handleDeviceInterrupt(int line, int cause, state_t *exception_state) {
         }
     } else {
         // Per gli altri device (disk, flash, ecc.)
-        dtpreg_t *dev = (dtpreg_t *)DEV_REG_ADDR(line, dev_no);
+        dtpreg_t *dev = (dtpreg_t *)DEVREGADDR(line, dev_no);
         dev_status = dev->status;
         dev->command = ACK;
     }
@@ -106,7 +107,7 @@ void handleDeviceInterrupt(int line, int cause, state_t *exception_state) {
     // Sblocca il processo che stava aspettando questo device
     pcb_t *unblocked = removeBlocked(&device_semaphores(0)[0]);
     if (unblocked != NULL) {
-        unblocked->p_s.reg_v0 = dev_status; // ritorna status del device in v0
+        unblocked->p_s.gpr[10] = dev_status; // ritorna status del device in v0
         insertProcQ(ready_queue(), unblocked);
         softBlockCount--;
     }
