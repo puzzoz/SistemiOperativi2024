@@ -3,14 +3,15 @@
 
 #include "headers/interrupts.h"
 #include <uriscv/const.h>
-#include "../headers/types.h"
+#include "headers/types.h"
 #include <uriscv/liburiscv.h>
 #include <uriscv/cpu.h>
 #include "headers/initial.h"
-#include "../phase1/headers/pcb.h"
-#include "./headers/scheduler.h"
+#include "headers/pcb.h"
+#include "headers/scheduler.h"
+#include "headers/asl.h"
 
-
+#define PSEUDO_CLOCK_SEM 48
 
 void updateCPUtime(pcb_t* p) {
     cpu_t now;
@@ -22,60 +23,46 @@ void saveState(state_t *dest, state_t *src) {
     *dest = *src;
 }
 
-// Rimuove e restituisce il primo processo bloccato su un dato device da una lista
-static pcb_t *extractBlockedByDevNo(int device_number, struct list_head *list) {
-    for_each_pcb(list) {
-        if (curr->dev_no == device_number)
-            return outProcQ(list, curr);
-    }
-    return NULL;
-}
-
-// Gestisce l'interrupt del timer di sistema (quello che scatta ogni 100ms)
-// Serve per sbloccare i processi che stavano aspettando un tick (tipo wait clock)
+// Gestisce l'interrupt del timer di sistema (ogni 100ms)
 static void handlePseudoClockInterrupt(state_t *exception_state) {
-    setTIMER(PSECOND);;  // reset del timer
-
+    setTIMER(PSECOND);  // reset del timer
     pcb_t *unblocked;
+    while ((unblocked = removeBlocked(&deviceSemaphores[0][1])) != NULL) {
+        unblocked->p_s.reg_v0 = 0;
+        insertProcQ(ready_queue(), unblocked);
+        softBlockCount--;
+    }
 
-    MUTEX_GLOBAL(
-        while ((unblocked = removeProcQ(&Locked_pseudo_clock)) != NULL) {
-            insertProcQ(ready_queue(), unblocked);
-            soft_blocked_count--;
-    })
-
-    if (*current_process())
-        LDST(exception_state);  // riprende il processo corrente
+    if (current_process(0))
+        LDST(exception_state);
     else
-        scheduler();            // altrimenti schedula un altro
+        scheduler();
 }
 
-// Gestisce l'interrupt del timer locale (PLT), cioè il time slice del processo
-// Se arriva qui vuol dire che il processo ha finito il suo tempo
+// Gestisce l'interrupt del PLT (fine time slice)
 static void handlePLTInterrupt(state_t *exception_state) {
-    setTIMER(-1);  // ACK
-    updateCPUtime(current_process);  // aggiorna tempo usato
-    saveState(&(current_process()->p_s), exception_state);  // salva stato nel PCB
+    setTIMER(-1);
+    updateCPUtime(current_process(0));
+    saveState(&(current_process(0)->p_s), exception_state);
 
     MUTEX_GLOBAL(
         insertProcQ(ready_queue(), current_process());  // lo rimette in ready
     );
-
-    scheduler();  // schedula un nuovo processo
+    scheduler();
 }
 
-// Gestisce un interrupt proveniente da un device (tipo disco, ethernet, terminale ecc.)
-// Capisce quale device ha generato l’interrupt, fa l’ACK e sblocca il processo in attesa
+// Calcola l'indice del semaforo per un dato device
+static int getDeviceIndex(int line, int dev_no) {
+    return ((line - 3) * 8) + dev_no;
+}
+
+// Gestisce un interrupt da device
 void handleDeviceInterrupt(int line, int cause, state_t *exception_state) {
     ACQUIRE_LOCK(global_lock());
-
     devregarea_t *dev_area = (devregarea_t *)BUS_REG_RAM_BASE;
     unsigned int bitmap = dev_area->interrupt_dev[line - 3];
     int dev_no = -1;
-    unsigned int dev_status = 0;
-    pcb_t *unblocked = NULL;
 
-    // cerca il primo device che ha effettivamente l’interrupt attivo
     for (int i = 0; i < 8; i++) {
         if (bitmap & (1 << i)) {
             dev_no = i;
@@ -88,52 +75,38 @@ void handleDeviceInterrupt(int line, int cause, state_t *exception_state) {
         return;
     }
 
-    // gestione separata per i terminali (hanno due sub-device: transmit e receive)
+    int dev_index = getDeviceIndex(line, dev_no);
+    unsigned int dev_status = 0;
+
     if (line == IL_TERMINAL) {
         termreg_t *term = (termreg_t *)DEV_REG_ADDR(line, dev_no);
-        if ((term->transm_status & 0xFF) == 5) {
+        if ((term->transm_status & 0xFF) == DEV_BUSY || (term->transm_status & 0xFF) == DEV_READY) {
             dev_status = term->transm_status;
             term->transm_command = ACK;
-            unblocked = extractBlockedByDevNo(dev_no, &Locked_terminal_transm);
         } else {
             dev_status = term->recv_status;
             term->recv_command = ACK;
-            unblocked = extractBlockedByDevNo(dev_no, &Locked_terminal_recv);
         }
     } else {
-        // tutti gli altri device (disco, flash, ethernet, stampante)
         dtpreg_t *dev = (dtpreg_t *)DEV_REG_ADDR(line, dev_no);
         dev_status = dev->status;
         dev->command = ACK;
-
-        switch (line) {
-            case IL_DISK:
-                unblocked = extractBlockedByDevNo(dev_no, &Locked_disk); break;
-            case IL_FLASH:
-                unblocked = extractBlockedByDevNo(dev_no, &Locked_flash); break;
-            case IL_ETHERNET:
-                unblocked = extractBlockedByDevNo(dev_no, &Locked_ethernet); break;
-            case IL_PRINTER:
-                unblocked = extractBlockedByDevNo(dev_no, &Locked_printer); break;
-        }
     }
 
-    // se c'era effettivamente un processo bloccato, lo sblocca e lo rimette in coda
-    if (unblocked) {
+    pcb_t *unblocked = removeBlocked(&deviceSemaphores[0][0]);
+    if (unblocked != NULL) {
         unblocked->p_s.reg_v0 = dev_status;
-        insertProcQ(&Ready_Queue, unblocked);
-        soft_blocked_count--;
+        insertProcQ(ready_queue(), unblocked);
+        softBlockCount--;
     }
 
-    RELEASE_LOCK(global_lock());
-
-    if (*current_process())
+    if (current_process(0))
         LDST(exception_state);
     else
         scheduler();
 }
 
-// Questa è la funzione principale che smista gli interrupt a seconda della linea
+// Smista gli interrupt alla funzione corretta
 void dispatchInterrupt(int cause, state_t *exception_state) {
     if (CAUSE_IP_GET(cause, IL_CPUTIMER))
         handlePLTInterrupt(exception_state);

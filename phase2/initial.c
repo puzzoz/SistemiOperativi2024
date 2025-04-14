@@ -84,15 +84,6 @@ void initializeVariables(){
 
     INIT_LIST_HEAD(&readyQueue);
 
-    //PER INTERRUPT
-    INIT_LIST_HEAD(&Locked_disk);
-    INIT_LIST_HEAD(&Locked_flash);
-    INIT_LIST_HEAD(&Locked_ethernet);
-    INIT_LIST_HEAD(&Locked_printer);
-    INIT_LIST_HEAD(&Locked_terminal_transm);
-    INIT_LIST_HEAD(&Locked_terminal_recv);
-    INIT_LIST_HEAD(&Locked_pseudo_clock);
-    //PER INTERRUPT
 
     memset(&readyQueue, 0, sizeof(pcb_t));
 
