@@ -163,12 +163,12 @@ int main(){
     scheduler();
 }
 
-int process_count() { return processCount; }
+int* process_count() { return &processCount; }
 
 unsigned int* global_lock() { return &globalLock; }
 
 pcb_t* current_process(int CPUn) { return (CPUn < NCPU) ? currentProcess[CPUn] : NULL; }
 
-struct list_head ready_queue() { return readyQueue; }
+struct list_head* ready_queue() { return &readyQueue; }
 
 int *device_semaphores(int CPUn) { return (CPUn < NCPU) ? deviceSemaphores[CPUn] : NULL; }

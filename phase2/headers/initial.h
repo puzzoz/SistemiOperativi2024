@@ -9,7 +9,7 @@
 
 unsigned int* global_lock();
 
-int process_count(); //num di processi iniziati ma non ancora terminati
+int* process_count(); //num di processi iniziati ma non ancora terminati
 
 pcb_t* current_process(int CPUn);
 
@@ -17,7 +17,7 @@ int *device_semaphores(int CPUn); // 2 semafori per ogni subdevice
 
 
 //queue dei PCB in READY state
-struct list_head ready_queue();
+struct list_head* ready_queue();
 
 //funzione Placeholder per uTLB_RefillHandler
 extern void uTLB_RefillHandler(void);
