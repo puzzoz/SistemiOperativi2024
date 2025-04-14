@@ -14,6 +14,15 @@
 
 static int processCount = 0; //num di processi iniziati ma non ancora terminati
 
+__attribute__((unused)) void memset(void *dest, int value, size_t n)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        ((unsigned char*)dest)[i] = (unsigned char)value;
+    }
+}
+
+
 //queue dei PCB in READY state
 struct list_head readyQueue;
 
