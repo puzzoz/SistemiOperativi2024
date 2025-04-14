@@ -4,6 +4,7 @@
 #include "headers/exceptions.h"
 #include "headers/interrupts.h"
 #include "headers/initial.h"
+#include "headers/scheduler.h"
 #include "../phase1/headers/pcb.h"
 #include "../phase1/headers/asl.h"
 #include <uriscv/liburiscv.h>
@@ -44,7 +45,9 @@ void syscallExcHandler() {
                     (*sem->s_key)--;
                 } else {
                     insertBlocked(sem->s_key, curr_p);
-                    // INSERIRE CHIAMATA ALLO SCHEDULER
+                    (*process_count())--;
+                    softBlockCount++;
+                    scheduler();
                 })
                 break;
             }
@@ -61,8 +64,15 @@ void syscallExcHandler() {
             case DOIO:
                 break;
             case GETTIME: EXC_RETURN(excState, curr_p->p_time)
-            case CLOCKWAIT:
+            case CLOCKWAIT: {
+                MUTEX_GLOBAL(
+                        insertBlocked(&clock_sem, curr_p);
+                        (*process_count())--;
+                        softBlockCount++;
+                        scheduler();
+                )
                 break;
+            }
             case GETSUPPORTPTR: EXC_RETURN(excState, (unsigned int) curr_p->p_supportStruct)
             case GETPROCESSID: {
                 if (excState->reg_a1 == 0) {

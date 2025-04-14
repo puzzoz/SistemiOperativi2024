@@ -1,16 +1,23 @@
 #ifndef MULTIPANDOS_SCHEDULER_H
 #define MULTIPANDOS_SCHEDULER_H
 
+
 #include <uriscv/liburiscv.h>
 #include <uriscv/const.h>
 #include "headers/initial.h"
 #include "../phase1/headers/pcb.h"
 #include "headers/scheduler.h"
 
+#define MUSEC_TO_TICKS(T) ((T) * (*((cpu_t *)TIMESCALEADDR)))
+
+#define MAXPLT 0xFFFFFFFFUL
+
 //settaggio TPR
 void setTPR(unsigned int value) {
     *((volatile unsigned int *)TPR) = value;
 }
+
+//risolvere problema softBlockCount
 
 volatile cpu_t sliceStart;
 
