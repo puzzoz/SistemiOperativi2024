@@ -146,7 +146,7 @@ int main(){
 
     for (int i = 0; i < NCPU-1; i++) {
         currentProcess[i]->p_s.status = MSTATUS_MPP_M;
-        currentProcess[i]->p_s.pc_epc = (memaddr) scheduler();
+        currentProcess[i]->p_s.pc_epc = (memaddr) scheduler;
         if(i>=1){
             currentProcess[i]->p_s.reg_sp=0x20020000 + (i * PAGESIZE);
         }
