@@ -8,6 +8,7 @@
 #include <uriscv/cpu.h>
 #include "headers/initial.h"
 #include "../phase1/headers/pcb.h"
+#include "./headers/scheduler.h"
 
 
 // Rimuove e restituisce il primo processo bloccato su un dato device da una lista
@@ -29,7 +30,7 @@ static void handlePseudoClockInterrupt(state_t *exception_state) {
     MUTEX_GLOBAL(
         while ((unblocked = removeProcQ(&Locked_pseudo_clock)) != NULL) {
             send(ssi_pcb, unblocked, 0);
-            insertProcQ(&Ready_Queue, unblocked);
+            insertProcQ(ready_queue(), unblocked);
             soft_blocked_count--;
     })
 
@@ -44,36 +45,18 @@ static void handlePseudoClockInterrupt(state_t *exception_state) {
 static void handlePLTInterrupt(state_t *exception_state) {
     setPLT(-1);  // ACK
     updateCPUtime(current_process);  // aggiorna tempo usato
-    saveState(&(current_process->p_s), exception_state);  // salva stato nel PCB
+    saveState(&(current_process()->p_s), exception_state);  // salva stato nel PCB
 
     MUTEX_GLOBAL(
-        insertProcQ(&Ready_Queue, current_process);  // lo rimette in ready
+        insertProcQ(ready_queue(), current_process());  // lo rimette in ready
     );
 
     scheduler();  // schedula un nuovo processo
 }
 
-// Questa è la funzione principale che smista gli interrupt a seconda della linea
-void dispatchInterrupt(int cause, state_t *exception_state) {
-    if (CAUSE_IP_GET(cause, IL_CPUTIMER))
-        handlePLTInterrupt(exception_state);
-    else if (CAUSE_IP_GET(cause, IL_TIMER))
-        handlePseudoClockInterrupt(exception_state);
-    else if (CAUSE_IP_GET(cause, IL_DISK))
-        handleDeviceInterrupt(IL_DISK, cause, exception_state);
-    else if (CAUSE_IP_GET(cause, IL_FLASH))
-        handleDeviceInterrupt(IL_FLASH, cause, exception_state);
-    else if (CAUSE_IP_GET(cause, IL_ETHERNET))
-        handleDeviceInterrupt(IL_ETHERNET, cause, exception_state);
-    else if (CAUSE_IP_GET(cause, IL_PRINTER))
-        handleDeviceInterrupt(IL_PRINTER, cause, exception_state);
-    else if (CAUSE_IP_GET(cause, IL_TERMINAL))
-        handleDeviceInterrupt(IL_TERMINAL, cause, exception_state);
-}
-
 // Gestisce un interrupt proveniente da un device (tipo disco, ethernet, terminale ecc.)
 // Capisce quale device ha generato l’interrupt, fa l’ACK e sblocca il processo in attesa
-static void handleDeviceInterrupt(int line, int cause, state_t *exception_state) {
+void handleDeviceInterrupt(int line, int cause, state_t *exception_state) {
     ACQUIRE_LOCK(global_lock());
 
     devregarea_t *dev_area = (devregarea_t *)BUS_REG_RAM_BASE;
@@ -91,7 +74,7 @@ static void handleDeviceInterrupt(int line, int cause, state_t *exception_state)
     }
 
     if (dev_no == -1) {
-        RELEASE_LOCK(&Global_Lock);
+        RELEASE_LOCK(global_lock());
         return;
     }
 
@@ -133,12 +116,30 @@ static void handleDeviceInterrupt(int line, int cause, state_t *exception_state)
         soft_blocked_count--;
     }
 
-    RELEASE_LOCK(&Global_Lock);
+    RELEASE_LOCK(global_lock());
 
     if (*current_process())
         LDST(exception_state);
     else
         scheduler();
+}
+
+// Questa è la funzione principale che smista gli interrupt a seconda della linea
+void dispatchInterrupt(int cause, state_t *exception_state) {
+    if (CAUSE_IP_GET(cause, IL_CPUTIMER))
+        handlePLTInterrupt(exception_state);
+    else if (CAUSE_IP_GET(cause, IL_TIMER))
+        handlePseudoClockInterrupt(exception_state);
+    else if (CAUSE_IP_GET(cause, IL_DISK))
+        handleDeviceInterrupt(IL_DISK, cause, exception_state);
+    else if (CAUSE_IP_GET(cause, IL_FLASH))
+        handleDeviceInterrupt(IL_FLASH, cause, exception_state);
+    else if (CAUSE_IP_GET(cause, IL_ETHERNET))
+        handleDeviceInterrupt(IL_ETHERNET, cause, exception_state);
+    else if (CAUSE_IP_GET(cause, IL_PRINTER))
+        handleDeviceInterrupt(IL_PRINTER, cause, exception_state);
+    else if (CAUSE_IP_GET(cause, IL_TERMINAL))
+        handleDeviceInterrupt(IL_TERMINAL, cause, exception_state);
 }
 
 #endif // MULTIPANDOS_INTERRUPTS_H

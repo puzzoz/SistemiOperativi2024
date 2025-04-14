@@ -2,6 +2,7 @@
 #define MULTIPANDOS_EXCEPTIONS_H
 
 #include "headers/exceptions.h"
+#include "headers/interrupts.h"
 #include "headers/initial.h"
 #include "../phase1/headers/pcb.h"
 #include "../phase1/headers/asl.h"
@@ -13,7 +14,7 @@
 #define CAUSE_GET_EXCCODE(x) ((x)&CAUSE_EXCCODE_MASK)
 
 
-void interruptExcHandler() {}
+void interruptExcHandler() { dispatchInterrupt(getCAUSE(), GET_EXCEPTION_STATE_PTR(getPRID())); }
 
 void syscallExcHandler() {
     state_t* excState = GET_EXCEPTION_STATE_PTR(getPRID());
