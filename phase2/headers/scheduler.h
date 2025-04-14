@@ -8,7 +8,7 @@
 
 //funzioni
 void setTPR(unsigned int value);
-void schedule(void);
+void scheduler(void);
 
 //variabile globale
 extern volatile cpu_t sliceStart;

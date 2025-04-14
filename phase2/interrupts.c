@@ -2,9 +2,8 @@
 #define MULTIPANDOS_INTERRUPTS_H
 
 #include "headers/interrupts.h"
-#include "../../headers/const.h"
-#include "../../headers/listx.h"
-#include "../../headers/types.h"
+#include <uriscv/const.h>
+#include "../headers/types.h"
 #include <uriscv/liburiscv.h>
 #include <uriscv/cpu.h>
 #include "headers/initial.h"
@@ -75,7 +74,7 @@ void dispatchInterrupt(int cause, state_t *exception_state) {
 // Gestisce un interrupt proveniente da un device (tipo disco, ethernet, terminale ecc.)
 // Capisce quale device ha generato l’interrupt, fa l’ACK e sblocca il processo in attesa
 static void handleDeviceInterrupt(int line, int cause, state_t *exception_state) {
-    ACQUIRE_LOCK(&Global_Lock);
+    ACQUIRE_LOCK(global_lock());
 
     devregarea_t *dev_area = (devregarea_t *)BUS_REG_RAM_BASE;
     unsigned int bitmap = dev_area->interrupt_dev[line - 3];
