@@ -27,7 +27,7 @@ void saveState(state_t *dest, state_t *src) {
 static void handlePseudoClockInterrupt(state_t *exception_state) {
     setTIMER(PSECOND);  // reset del timer
     pcb_t *unblocked;
-    while ((unblocked = removeBlocked(&deviceSemaphores[0][1])) != NULL) {
+    while ((unblocked = removeBlocked(&device_semaphores(0)[1]) != NULL) {
         unblocked->p_s.reg_v0 = 0;
         insertProcQ(ready_queue(), unblocked);
         softBlockCount--;
@@ -93,7 +93,7 @@ void handleDeviceInterrupt(int line, int cause, state_t *exception_state) {
         dev->command = ACK;
     }
 
-    pcb_t *unblocked = removeBlocked(&deviceSemaphores[0][0]);
+    pcb_t *unblocked = removeBlocked(&device_semaphores(0)[0]);
     if (unblocked != NULL) {
         unblocked->p_s.reg_v0 = dev_status;
         insertProcQ(ready_queue(), unblocked);

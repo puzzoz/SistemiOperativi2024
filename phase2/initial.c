@@ -29,16 +29,6 @@ unsigned int softBlockCount;
 //queue dei PCB in READY state
 struct list_head readyQueue;
 
-//per interrupt
-struct list_head Locked_disk;
-struct list_head Locked_flash;
-struct list_head Locked_ethernet;
-struct list_head Locked_printer;
-struct list_head Locked_terminal_transm;
-struct list_head Locked_terminal_recv;
-struct list_head Locked_pseudo_clock;
-//per interrupt
-
 
 //vettore di pointer ai pcb con state "running" in ogni CPU currentProcess
 pcb_t *currentProcess[NCPU];
