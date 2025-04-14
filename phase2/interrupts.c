@@ -38,7 +38,7 @@ static void handlePseudoClockInterrupt(state_t *exception_state) {
             soft_blocked_count--;
     })
 
-    if (current_process)
+    if (*current_process())
         LDST(exception_state);  // riprende il processo corrente
     else
         scheduler();            // altrimenti schedula un altro
@@ -140,7 +140,7 @@ static void handleDeviceInterrupt(int line, int cause, state_t *exception_state)
 
     RELEASE_LOCK(&Global_Lock);
 
-    if (current_process)
+    if (*current_process())
         LDST(exception_state);
     else
         scheduler();
