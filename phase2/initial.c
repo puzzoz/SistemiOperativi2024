@@ -14,6 +14,7 @@
 
 static int processCount = 0; //num di processi iniziati ma non ancora terminati
 
+typedef unsigned int size_t;
 __attribute__((unused)) void memset(void *dest, int value, size_t n)
 {
     for (size_t i = 0; i < n; i++)
