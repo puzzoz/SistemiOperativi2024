@@ -10,10 +10,7 @@
 #include "headers/initial.h"
 #include "../phase1/headers/pcb.h"
 
-#define DEVICE_BASE_ADDRESS 0x10000054
-#define DEVICES_PER_LINE 8
-#define LINE_OFFSET 0x80
-#define DEVICE_OFFSET 0x10
+
 
 // Rimuove e restituisce il primo processo bloccato su un dato device da una lista
 static pcb_t *extractBlockedByDevNo(int device_number, struct list_head *list) {
