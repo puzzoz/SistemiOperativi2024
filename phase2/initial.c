@@ -13,6 +13,7 @@
 //LEVEL 3 GLOBAL VARIABLES
 
 static int processCount = 0; //num di processi iniziati ma non ancora terminati
+int clock_sem = 0;
 
 typedef unsigned int size_t;
 __attribute__((unused)) void memset(void *dest, int value, size_t n)
@@ -23,6 +24,7 @@ __attribute__((unused)) void memset(void *dest, int value, size_t n)
     }
 }
 
+unsigned int softBlockCount;
 
 //queue dei PCB in READY state
 struct list_head readyQueue;
