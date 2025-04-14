@@ -19,6 +19,16 @@ int *device_semaphores(int CPUn); // 2 semafori per ogni subdevice
 //queue dei PCB in READY state
 struct list_head* ready_queue();
 
+//PER INTERRUPT
+extern struct list_head Locked_disk;
+extern struct list_head Locked_flash;
+extern struct list_head Locked_ethernet;
+extern struct list_head Locked_printer;
+extern struct list_head Locked_terminal_transm;
+extern struct list_head Locked_terminal_recv;
+extern struct list_head Locked_pseudo_clock;
+//PER INTERRUPT
+
 //funzione Placeholder per uTLB_RefillHandler
 extern void uTLB_RefillHandler(void);
 

@@ -11,6 +11,17 @@
 #include "./headers/scheduler.h"
 
 
+
+void updateCPUtime(pcb_t* p) {
+    cpu_t now;
+    STCK(now);
+    p->p_time += now - sliceStart;
+}
+
+void saveState(state_t *dest, state_t *src) {
+    *dest = *src;
+}
+
 // Rimuove e restituisce il primo processo bloccato su un dato device da una lista
 static pcb_t *extractBlockedByDevNo(int device_number, struct list_head *list) {
     for_each_pcb(list) {
@@ -23,13 +34,12 @@ static pcb_t *extractBlockedByDevNo(int device_number, struct list_head *list) {
 // Gestisce l'interrupt del timer di sistema (quello che scatta ogni 100ms)
 // Serve per sbloccare i processi che stavano aspettando un tick (tipo wait clock)
 static void handlePseudoClockInterrupt(state_t *exception_state) {
-    setIntervalTimer(PSECOND);  // reset del timer
+    setTIMER(PSECOND);;  // reset del timer
 
     pcb_t *unblocked;
 
     MUTEX_GLOBAL(
         while ((unblocked = removeProcQ(&Locked_pseudo_clock)) != NULL) {
-            send(ssi_pcb, unblocked, 0);
             insertProcQ(ready_queue(), unblocked);
             soft_blocked_count--;
     })
@@ -43,7 +53,7 @@ static void handlePseudoClockInterrupt(state_t *exception_state) {
 // Gestisce l'interrupt del timer locale (PLT), cioè il time slice del processo
 // Se arriva qui vuol dire che il processo ha finito il suo tempo
 static void handlePLTInterrupt(state_t *exception_state) {
-    setPLT(-1);  // ACK
+    setTIMER(-1);  // ACK
     updateCPUtime(current_process);  // aggiorna tempo usato
     saveState(&(current_process()->p_s), exception_state);  // salva stato nel PCB
 
@@ -111,7 +121,6 @@ void handleDeviceInterrupt(int line, int cause, state_t *exception_state) {
     // se c'era effettivamente un processo bloccato, lo sblocca e lo rimette in coda
     if (unblocked) {
         unblocked->p_s.reg_v0 = dev_status;
-        send(ssi_pcb, unblocked, (memaddr)dev_status);
         insertProcQ(&Ready_Queue, unblocked);
         soft_blocked_count--;
     }

@@ -27,6 +27,17 @@ __attribute__((unused)) void memset(void *dest, int value, size_t n)
 //queue dei PCB in READY state
 struct list_head readyQueue;
 
+//per interrupt
+struct list_head Locked_disk;
+struct list_head Locked_flash;
+struct list_head Locked_ethernet;
+struct list_head Locked_printer;
+struct list_head Locked_terminal_transm;
+struct list_head Locked_terminal_recv;
+struct list_head Locked_pseudo_clock;
+//per interrupt
+
+
 //vettore di pointer ai pcb con state "running" in ogni CPU currentProcess
 pcb_t *currentProcess[NCPU];
 
@@ -72,6 +83,16 @@ void initializeVariables(){
     processCount = 0;
 
     INIT_LIST_HEAD(&readyQueue);
+
+    //PER INTERRUPT
+    INIT_LIST_HEAD(&Locked_disk);
+    INIT_LIST_HEAD(&Locked_flash);
+    INIT_LIST_HEAD(&Locked_ethernet);
+    INIT_LIST_HEAD(&Locked_printer);
+    INIT_LIST_HEAD(&Locked_terminal_transm);
+    INIT_LIST_HEAD(&Locked_terminal_recv);
+    INIT_LIST_HEAD(&Locked_pseudo_clock);
+    //PER INTERRUPT
 
     memset(&readyQueue, 0, sizeof(pcb_t));
 
