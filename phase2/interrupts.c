@@ -9,7 +9,7 @@
 #include "headers/initial.h"
 #include "headers/pcb.h"
 #include "headers/scheduler.h"
-#include "headers/asl.h"
+#include "../phase1/headers/asl.h"
 
 #define PSEUDO_CLOCK_SEM 48
 
