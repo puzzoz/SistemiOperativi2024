@@ -10,7 +10,7 @@
 #endif //MULTIPANDOS_INITIAL_H
 
 //LEVEL 3 GLOBAL VARIABLES
-
+/*
 static int processCount = 0; //num di processi iniziati ma non ancora terminati
 
 //queue dei PCB in READY state
@@ -30,6 +30,7 @@ extern void uTLB_RefillHandler(void);
 
 //Level 3 Nucleus exception handler
 extern void exceptionHandler(void);
+*/
 
 void initializePassUpVector() {
     for (int cpu_id = 0; cpu_id < NCPU; cpu_id++){ 
@@ -58,19 +59,19 @@ void initializePassUpVector() {
 }
 
 void initializeVariables(){
-    processCount = 0;
+    process_count = 0;
 
-    INIT_LIST_HEAD(&readyQueue_h);
+    INIT_LIST_HEAD(&ready_queue);
 
-    memset(&readyQueue, 0, sizeof(pcb_t));
+    memset(&ready_queue, 0, sizeof(pcb_t));
 
     for (int i = 0; i < NCPU; i++) {
-        currentProcess[i] = NULL;
+        current_process[i] = NULL;
     }
 
-    memset(deviceSemaphores, 0, sizeof(deviceSemaphores));
+    memset(device_semaphores, 0, sizeof(device_semaphores));
 
-    globalLock = 0;
+    global_lock = 0;
 }
 extern void test();
 
@@ -96,9 +97,9 @@ void instantiateProcess() {
         newProcess->p_semAdd = NULL;
         newProcess->p_supportStruct = NULL;
 
-        insertProcQ(&readyQueue_h, newProcess);
+        insertProcQ(&ready_queue, newProcess);
 
-        processCount++;
+        process_count++;
     }
 }
 
@@ -111,7 +112,7 @@ void interruptRouting(){
 
     // Impostiamo la Task Priority Register (TPR) per ogni CPU
     for (int cpu_id = 0; cpu_id < NCPU; cpu_id++) {
-        if (currentProcess[cpu_id] == NULL) {
+        if (current_process[cpu_id] == NULL) {
             *((memaddr *)TPR) = 1;
         } else {
             *((memaddr *)TPR) = 0;
@@ -134,20 +135,20 @@ void main(){
     instantiateProcess();
 
     for (int i = 0; i < NCPU-1; i++) {
-        currentProcess[i]->p_s.status = MSTATUS_MPP_M;
-        currentProcess[i]->p_s.pc_epc = (memaddr) scheduler();
+        current_process[i]->p_s.status = MSTATUS_MPP_M;
+        current_process[i]->p_s.pc_epc = (memaddr) scheduler();
         if(i>=1){
-            currentProcess[i]->p_s.reg_sp=0x20020000 + (i * PAGESIZE);
+            current_process[i]->p_s.reg_sp=0x20020000 + (i * PAGESIZE);
         }
-        currentProcess[i]->p_s.mie = 0;
-        currentProcess[i]->p_parent = NULL;
-        currentProcess[i]->p_child.next = NULL;
-        currentProcess[i]->p_child.prev = NULL;
-        currentProcess[i]->p_sib.next = NULL;
-        currentProcess[i]->p_sib.prev = NULL;
-        currentProcess[i]->p_time = 0;
-        currentProcess[i]->p_semAdd = NULL;
-        currentProcess[i]->p_supportStruct = NULL;
+        current_process[i]->p_s.mie = 0;
+        current_process[i]->p_parent = NULL;
+        current_process[i]->p_child.next = NULL;
+        current_process[i]->p_child.prev = NULL;
+        current_process[i]->p_sib.next = NULL;
+        current_process[i]->p_sib.prev = NULL;
+        current_process[i]->p_time = 0;
+        current_process[i]->p_semAdd = NULL;
+        current_process[i]->p_supportStruct = NULL;
     }
 
     scheduler();
