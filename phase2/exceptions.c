@@ -50,6 +50,7 @@ void syscallExcHandler() {
                 MUTEX_GLOBAL(if (*sem->s_key > 0) {
                     (*sem->s_key)--;
                 } else {
+                    blockPcb(sem->s_key, curr_p);
                     callScheduler = 1;
                 })
                 if (callScheduler) scheduler();
