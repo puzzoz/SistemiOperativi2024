@@ -3,11 +3,11 @@
 
 #include "headers/interrupts.h"
 #include <uriscv/const.h>
-#include "headers/types.h"
+#include "../headers/types.h"
 #include <uriscv/liburiscv.h>
 #include <uriscv/cpu.h>
 #include "headers/initial.h"
-#include "headers/pcb.h"
+#include "../phase1/headers/pcb.h"
 #include "headers/scheduler.h"
 #include "../phase1/headers/asl.h"
 
@@ -67,7 +67,7 @@ static int getDeviceIndex(int line, int dev_no) {
 // Interrupt da device: trova chi ha fatto interrupt, fa ACK e sblocca il processo
 void handleDeviceInterrupt(int line, int cause, state_t *exception_state) {
     ACQUIRE_LOCK(global_lock());
-    devregarea_t *dev_area = (devregarea_t *)BUS_REG_RAM_BASE;
+    devregarea_t *dev_area = (devregarea_t *)RAMBASEADDR;
     unsigned int bitmap = dev_area->interrupt_dev[line - 3];
     int dev_no = -1;
 

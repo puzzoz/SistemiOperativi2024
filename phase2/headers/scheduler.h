@@ -8,6 +8,7 @@
 
 //funzioni
 void setTPR(unsigned int value);
+void setCurrentProcess(int CPUn, pcb_t* p);
 void scheduler(void);
 
 //variabile globale

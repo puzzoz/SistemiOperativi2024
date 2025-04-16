@@ -9,6 +9,9 @@
 #include "../phase1/headers/asl.h"
 #include <uriscv/liburiscv.h>
 #include <uriscv/cpu.h>
+#include "../headers/listx.h"
+#include "../headers/types.h"
+
 
 #define EXCEPTION_IN_KERNEL_MODE(excStatus) (excStatus->status & MSTATUS_MPP_MASK)
 #define EXC_RETURN(excState, x) {excState->reg_a0 = x; break;}
@@ -20,7 +23,7 @@ void interruptExcHandler() { dispatchInterrupt(getCAUSE(), GET_EXCEPTION_STATE_P
 void syscallExcHandler() {
     state_t* excState = GET_EXCEPTION_STATE_PTR(getPRID());
     if (EXCEPTION_IN_KERNEL_MODE(excState) && excState->reg_a0 < 0) {
-        MUTEX_GLOBAL(pcb_t* curr_p = current_process())
+        MUTEX_GLOBAL(pcb_t* curr_p = current_process(getPRID()))
         switch (excState->reg_a0) {
             case CREATEPROCESS: {
                 MUTEX_GLOBAL(
@@ -78,7 +81,7 @@ void syscallExcHandler() {
                 excState->pc_epc += 4;
                 //Scrivo il comando nel Registro
                 *((int *)excState->reg_a1) = excState->reg_a2;
-                scheduler()
+                scheduler();
                 break;
                 //fine punto 12
             case GETTIME: EXC_RETURN(excState, curr_p->p_time)
@@ -127,6 +130,22 @@ void exceptionHandler() {
             tlbExcHandler();
             break;
     }
+}
+
+void terminte_process_tree(pcb_t* p){
+    //se il processo ha un genitore, lo perde e viene rimosso dalla lista dei figli
+    if (p->p_parent != NULL)
+        outChild(p);
+
+    //termino ricorsivamente tutti i figli di p
+    while (!emptyChild(p)) {
+        pcb_t *child = removeChild(p);
+        terminte_process_tree(child);
+    }
+
+    (*process_count())--;
+
+    freePcb(p);
 }
 
 #endif //MULTIPANDOS_EXCEPTIONS_H

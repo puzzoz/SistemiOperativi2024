@@ -59,7 +59,6 @@ void initializePassUpVector() {
             passupvector->tlb_refill_stackPtr = 0x20020000 + (cpu_id * PAGESIZE);
         }
 
-        
         passupvector->exception_handler = (memaddr)exceptionHandler;
 
         // settiamo stack pointer

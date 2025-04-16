@@ -17,6 +17,12 @@ void setTPR(unsigned int value) {
     *((volatile unsigned int *)TPR) = value;
 }
 
+void setCurrentProcess(int CPUn, pcb_t* p) {
+    if (CPUn >= 0 && CPUn < NCPU) {
+        currentProcess[CPUn] = p;
+    }
+}
+
 //risolvere problema softBlockCount
 
 volatile cpu_t sliceStart;
@@ -59,7 +65,7 @@ void scheduler() {
     } else {
         //ready queue non vuota --> primo pcb rimosso e assegnazione a currentProcess --> global lock rilasciato
         pcb_t* newProc = removeProcQ(ready_queue());
-        *current_process() = newProc;
+        setCurrentProcess(getPRID(), newProc);
         RELEASE_LOCK(global_lock());
     }
 
@@ -67,7 +73,7 @@ void scheduler() {
 
     STCK(sliceStart); //
 
-    LDST(&((*current_process())->p_s)); //stato del processore caricato dal pcb corrente
+    LDST(&(current_process(getPRID())->p_s)); //stato del processore caricato dal pcb corrente
 }
 
 #endif //MULTIPANDOS_SCHEDULER_H
