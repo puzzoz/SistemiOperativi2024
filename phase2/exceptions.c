@@ -5,7 +5,6 @@
 #include "headers/interrupts.h"
 #include "headers/initial.h"
 #include "headers/scheduler.h"
-#include "../phase1/headers/pcb.h"
 #include "../phase1/headers/asl.h"
 #include <uriscv/liburiscv.h>
 #include <uriscv/cpu.h>
@@ -64,11 +63,11 @@ void syscallExcHandler() {
             case DOIO://Punto 12
                 //blocco il processo sul semaforo a cui fa riferimento commandAddr
                 MUTEX_GLOBAL(
-                        curr_p->p_semAdd = (int *)excState->reg_a1;
-                        insertBlocked((int *)excState->reg_a1, curr_p);
-                        (*process_count())--;
-                        softBlockCount++;
-                );
+                    curr_p->p_semAdd = (int *)excState->reg_a1;
+                    insertBlocked((int *)excState->reg_a1, curr_p);
+                    (*process_count())--;
+                    softBlockCount++
+                )
                 //Aggiorno il tempo Utilizzato
                 cpu_t now;
                 STCK(now);
@@ -77,8 +76,8 @@ void syscallExcHandler() {
                 curr_p->p_s = *excState;
                 excState->pc_epc += 4;
                 //Scrivo il comando nel Registro
-                *((int *)excState->reg_a1) = excState->reg_a2;
-                scheduler()
+                excState->reg_a1 = excState->reg_a2;
+                scheduler();
                 break;
                 //fine punto 12
             case GETTIME: EXC_RETURN(excState, curr_p->p_time)

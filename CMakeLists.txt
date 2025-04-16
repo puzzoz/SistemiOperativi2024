@@ -15,7 +15,7 @@ add_compile_options(-ffreestanding -static -nostartfiles -nostdlib -I${URISCV_IN
 
 set(CMAKE_EXE_LINKER_FLAGS "-G 0 -nostdlib -T ${URISCV_SRC}/uriscvcore.ldscript -march=rv32imfd -melf32lriscv")
 
-set(PHASE_1_SOURCES phase1/pcb.c phase1/asl.c phase1/p1test.c)
+set(PHASE_1_SOURCES phase1/pcb.c phase1/asl.c)
 set(PHASE_2_SOURCES phase2/exceptions.c phase2/initial.c phase2/interrupts.c phase2/scheduler.c phase2/p2test.c)
 
 add_executable(MultiPandOS ${PHASE_1_SOURCES} ${PHASE_2_SOURCES} ${URISCV_SRC}/crtso.S ${URISCV_SRC}/liburiscv.S)

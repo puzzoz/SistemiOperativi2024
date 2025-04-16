@@ -3,11 +3,9 @@
 
 #include "headers/interrupts.h"
 #include <uriscv/const.h>
-#include "headers/types.h"
+#include "../headers/types.h"
 #include <uriscv/liburiscv.h>
-#include <uriscv/cpu.h>
 #include "headers/initial.h"
-#include "headers/pcb.h"
 #include "headers/scheduler.h"
 #include "../phase1/headers/asl.h"
 
@@ -40,7 +38,7 @@ static void handlePseudoClockInterrupt(state_t *exception_state) {
     RELEASE_LOCK(global_lock());
 
     // Se c'è un processo in esecuzione, lo riprende
-    if (current_process(0))
+    if (current_process())
         LDST(exception_state);
     else
         scheduler();
@@ -49,11 +47,11 @@ static void handlePseudoClockInterrupt(state_t *exception_state) {
 // Interrupt del PLT: fine time slice per il processo corrente
 static void handlePLTInterrupt(state_t *exception_state) {
     setTIMER(-1); // ACK del PLT
-    updateCPUtime(current_process(0));
-    saveState(&(current_process(0)->p_s), exception_state);
+    updateCPUtime(current_process());
+    saveState(&(current_process()->p_s), exception_state);
 
     ACQUIRE_LOCK(global_lock());
-    insertProcQ(ready_queue(), current_process(0)); // rimettilo in ready
+    insertProcQ(ready_queue(), current_process()); // rimettilo in ready
     RELEASE_LOCK(global_lock());
 
     scheduler();
@@ -115,7 +113,7 @@ void handleDeviceInterrupt(int line, int cause, state_t *exception_state) {
     RELEASE_LOCK(global_lock());
 
     // Riprende il processo se esiste, altrimenti schedula
-    if (current_process(0))
+    if (current_process())
         LDST(exception_state);
     else
         scheduler();

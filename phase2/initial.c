@@ -4,8 +4,6 @@
 #include "./headers/initial.h"
 #include "../phase1/headers/asl.h"
 #include "../phase1/headers/pcb.h"
-#include "../headers/types.h"
-#include "../headers/const.h"
 #include "./headers/scheduler.h"
 
 #endif //MULTIPANDOS_INITIAL_H
@@ -41,9 +39,6 @@ unsigned int globalLock; //puo' avere solo valore 0 e 1
 //funzione Placeholder per uTLB_RefillHandler
 extern void uTLB_RefillHandler(void);
 
-//Level 3 Nucleus exception handler
-extern void exceptionHandler(void);
-
 
 void initializePassUpVector() {
     for (int cpu_id = 0; cpu_id < NCPU; cpu_id++){ 
@@ -75,7 +70,6 @@ void initializeVariables(){
     processCount = 0;
 
     INIT_LIST_HEAD(&readyQueue);
-
 
     memset(&readyQueue, 0, sizeof(pcb_t));
 
@@ -166,14 +160,15 @@ int main(){
     }
 
     scheduler();
+    return 1;
 }
 
 int* process_count() { return &processCount; }
 
 unsigned int* global_lock() { return &globalLock; }
 
-pcb_t* current_process(int CPUn) { return (CPUn < NCPU) ? currentProcess[CPUn] : NULL; }
+pcb_t* current_process() { return (getPRID() < NCPU) ? currentProcess[getPRID()] : NULL; }
 
 struct list_head* ready_queue() { return &readyQueue; }
 
-int *device_semaphores(int CPUn) { return (CPUn < NCPU) ? deviceSemaphores[CPUn] : NULL; }
+int *device_semaphores(int devNo) { return (devNo < NCPU) ? deviceSemaphores[devNo] : NULL; }
