@@ -1,4 +1,6 @@
 #ifndef MULTIPANDOS_EXCEPTIONS_H
 #define MULTIPANDOS_EXCEPTIONS_H
 
-#endif //MULTIPANDOS_EXCEPTIONS_H
+void exceptionHandler();
+
+#endif

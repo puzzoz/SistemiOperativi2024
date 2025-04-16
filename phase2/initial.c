@@ -1,28 +1,41 @@
 #ifndef MULTIPANDOS_INITIAL_H
 #define MULTIPANDOS_INITIAL_H
 
-#include "headers/initial.h"
-#include "./phase1/headers/pcb.h"
-#include "headers/types.h"
-#include "headers/const.h"
-#include "headers/initial.h"
+#include "./headers/initial.h"
+#include "../phase1/headers/asl.h"
+#include "../phase1/headers/pcb.h"
+#include "../headers/types.h"
+#include "../headers/const.h"
+#include "./headers/scheduler.h"
 
 #endif //MULTIPANDOS_INITIAL_H
 
 //LEVEL 3 GLOBAL VARIABLES
 
 static int processCount = 0; //num di processi iniziati ma non ancora terminati
+int clock_sem = 0;
+
+typedef unsigned int size_t;
+__attribute__((unused)) void memset(void *dest, int value, size_t n)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        ((unsigned char*)dest)[i] = (unsigned char)value;
+    }
+}
+
+unsigned int softBlockCount;
 
 //queue dei PCB in READY state
-static struct list_head readyQueue_h;
-static pcb_t readyQueue;
+struct list_head readyQueue;
+
 
 //vettore di pointer ai pcb con state "running" in ogni CPU currentProcess
 pcb_t *currentProcess[NCPU];
 
 int deviceSemaphores[NCPU][2]; // 2 semafori per ogni subdevice
 
-int globalLock; //puo' avere solo valore 0 e 1
+unsigned int globalLock; //puo' avere solo valore 0 e 1
 
 
 //funzione Placeholder per uTLB_RefillHandler
@@ -30,6 +43,7 @@ extern void uTLB_RefillHandler(void);
 
 //Level 3 Nucleus exception handler
 extern void exceptionHandler(void);
+
 
 void initializePassUpVector() {
     for (int cpu_id = 0; cpu_id < NCPU; cpu_id++){ 
@@ -60,7 +74,8 @@ void initializePassUpVector() {
 void initializeVariables(){
     processCount = 0;
 
-    INIT_LIST_HEAD(&readyQueue_h);
+    INIT_LIST_HEAD(&readyQueue);
+
 
     memset(&readyQueue, 0, sizeof(pcb_t));
 
@@ -96,7 +111,7 @@ void instantiateProcess() {
         newProcess->p_semAdd = NULL;
         newProcess->p_supportStruct = NULL;
 
-        insertProcQ(&readyQueue_h, newProcess);
+        insertProcQ(&readyQueue, newProcess);
 
         processCount++;
     }
@@ -121,7 +136,7 @@ void interruptRouting(){
 }
 
 
-void main(){
+int main(){
     initializePassUpVector();
 
     initPcbs();
@@ -135,7 +150,7 @@ void main(){
 
     for (int i = 0; i < NCPU-1; i++) {
         currentProcess[i]->p_s.status = MSTATUS_MPP_M;
-        currentProcess[i]->p_s.pc_epc = (memaddr) scheduler();
+        currentProcess[i]->p_s.pc_epc = (memaddr) scheduler;
         if(i>=1){
             currentProcess[i]->p_s.reg_sp=0x20020000 + (i * PAGESIZE);
         }
@@ -152,3 +167,13 @@ void main(){
 
     scheduler();
 }
+
+int* process_count() { return &processCount; }
+
+unsigned int* global_lock() { return &globalLock; }
+
+pcb_t* current_process(int CPUn) { return (CPUn < NCPU) ? currentProcess[CPUn] : NULL; }
+
+struct list_head* ready_queue() { return &readyQueue; }
+
+int *device_semaphores(int CPUn) { return (CPUn < NCPU) ? deviceSemaphores[CPUn] : NULL; }
