@@ -14,6 +14,12 @@
 #define CAUSE_GET_EXCCODE(x) ((x)&CAUSE_EXCCODE_MASK)
 
 
+void blockPcb(int *sem_key, pcb_t *pcb) {
+    insertBlocked(sem_key, pcb);
+    (*process_count())--;
+    softBlockCount++;
+}
+
 void interruptExcHandler() { dispatchInterrupt(getCAUSE(), GET_EXCEPTION_STATE_PTR(getPRID())); }
 
 void syscallExcHandler() {
@@ -40,32 +46,32 @@ void syscallExcHandler() {
                 break;
             case PASSEREN: {
                 semd_t *sem = ((semd_t *) excState->reg_a1);
+                unsigned int callScheduler = 0;
                 MUTEX_GLOBAL(if (*sem->s_key > 0) {
                     (*sem->s_key)--;
                 } else {
-                    insertBlocked(sem->s_key, curr_p);
-                    (*process_count())--;
-                    softBlockCount++;
-                    scheduler();
+                    callScheduler = 1;
                 })
+                if (callScheduler) scheduler();
                 break;
             }
             case VERHOGEN: {
                 semd_t *sem = ((semd_t *) excState->reg_a1);
+                unsigned int callScheduler = 0;
                 MUTEX_GLOBAL(if (*sem->s_key < 1) {
                     (*sem->s_key)++;
                 } else {
-                    insertBlocked(sem->s_key, curr_p);
-                    // INSERIRE CHIAMATA ALLO SCHEDULER
+                    blockPcb(sem->s_key, curr_p);
+                    callScheduler = 1;
                 })
+                if (callScheduler) scheduler();
                 break;
             }
-            case DOIO://Punto 12
+            case DOIO:
                 //blocco il processo sul semaforo a cui fa riferimento commandAddr
                 MUTEX_GLOBAL(
                     curr_p->p_semAdd = (int *)excState->reg_a1;
-                    insertBlocked((int *)excState->reg_a1, curr_p);
-                    (*process_count())--;
+                    blockPcb((int *)excState->reg_a1, curr_p);
                     softBlockCount++
                 )
                 //Aggiorno il tempo Utilizzato
@@ -79,15 +85,12 @@ void syscallExcHandler() {
                 excState->reg_a1 = excState->reg_a2;
                 scheduler();
                 break;
-                //fine punto 12
             case GETTIME: EXC_RETURN(excState, curr_p->p_time)
             case CLOCKWAIT: {
                 MUTEX_GLOBAL(
-                        insertBlocked(&clock_sem, curr_p);
-                        (*process_count())--;
-                        softBlockCount++;
-                        scheduler();
+                    blockPcb(&clock_sem, curr_p);
                 )
+                scheduler();
                 break;
             }
             case GETSUPPORTPTR: EXC_RETURN(excState, (unsigned int) curr_p->p_supportStruct)
