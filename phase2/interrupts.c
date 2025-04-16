@@ -30,7 +30,7 @@ static void handlePseudoClockInterrupt(state_t *exception_state) {
     ACQUIRE_LOCK(global_lock());
     pcb_t *unblocked;
     // Sblocca tutti i processi che aspettavano il clock
-    while ((unblocked = removeBlocked(&device_semaphores(0)[1])) != NULL) {
+    while ((unblocked = removeBlocked(&device_semaphores(getPRID())[1])) != NULL) {
         unblocked->p_s.gpr[10] = 0;
         insertProcQ(ready_queue(), unblocked);
         softBlockCount--;
@@ -103,7 +103,7 @@ void handleDeviceInterrupt(int line, int cause, state_t *exception_state) {
     }
 
     // Sblocca il processo che stava aspettando questo device
-    pcb_t *unblocked = removeBlocked(&device_semaphores(0)[0]);
+    pcb_t *unblocked = removeBlocked(&device_semaphores(getPRID())[0]);
     if (unblocked != NULL) {
         unblocked->p_s.gpr[10] = dev_status; // ritorna status del device in v0
         insertProcQ(ready_queue(), unblocked);
