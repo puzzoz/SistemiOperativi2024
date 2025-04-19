@@ -30,7 +30,7 @@ static void handlePseudoClockInterrupt(state_t *exception_state) {
     ACQUIRE_LOCK(global_lock());
     pcb_t *unblocked;
     // Sblocca tutti i processi che aspettavano il clock
-    while ((unblocked = removeBlocked(&device_semaphores(getPRID())[1])) != NULL) {
+    while ((unblocked = removeBlocked(&device_semaphores(PSEUDO_CLOCK_SEM))) != NULL) {
         unblocked->p_s.gpr[10] = 0;
         insertProcQ(ready_queue(), unblocked);
         softBlockCount--;
@@ -65,6 +65,7 @@ static int getDeviceIndex(int line, int dev_no) {
 // Interrupt da device: trova chi ha fatto interrupt, fa ACK e sblocca il processo
 void handleDeviceInterrupt(int line, unsigned int cause, state_t *exception_state) {
     ACQUIRE_LOCK(global_lock());
+    int sem_index = getDeviceIndex(line, dev_no);
     devregarea_t *dev_area = (devregarea_t *)RAMBASEADDR;
     unsigned int bitmap = dev_area->interrupt_dev[line - 3];
     int dev_no = -1;
@@ -94,6 +95,7 @@ void handleDeviceInterrupt(int line, unsigned int cause, state_t *exception_stat
         } else {
             dev_status = term->recv_status;
             term->recv_command = ACK;
+            sem_index += 1;
         }
     } else {
         // Per gli altri device (disk, flash, ecc.)
@@ -103,7 +105,8 @@ void handleDeviceInterrupt(int line, unsigned int cause, state_t *exception_stat
     }
 
     // Sblocca il processo che stava aspettando questo device
-    pcb_t *unblocked = removeBlocked(&device_semaphores(getPRID())[0]);
+
+    pcb_t *unblocked = removeBlocked(device_semaphores(sem_index));
     if (unblocked != NULL) {
         unblocked->p_s.gpr[10] = dev_status; // ritorna status del device in v0
         insertProcQ(ready_queue(), unblocked);
