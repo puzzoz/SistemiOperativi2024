@@ -30,7 +30,7 @@ static void handlePseudoClockInterrupt(state_t *exception_state) {
     ACQUIRE_LOCK(global_lock());
     pcb_t *unblocked;
     // Sblocca tutti i processi che aspettavano il clock
-    while ((unblocked = removeBlocked(&device_semaphores(PSEUDO_CLOCK_SEM))) != NULL) {
+    while ((unblocked = removeBlocked(device_semaphores(PSEUDO_CLOCK_SEM))) != NULL) {
         unblocked->p_s.gpr[10] = 0;
         insertProcQ(ready_queue(), unblocked);
         softBlockCount--;
@@ -65,10 +65,10 @@ static int getDeviceIndex(int line, int dev_no) {
 // Interrupt da device: trova chi ha fatto interrupt, fa ACK e sblocca il processo
 void handleDeviceInterrupt(int line, unsigned int cause, state_t *exception_state) {
     ACQUIRE_LOCK(global_lock());
-    int sem_index = getDeviceIndex(line, dev_no);
     devregarea_t *dev_area = (devregarea_t *)RAMBASEADDR;
     unsigned int bitmap = dev_area->interrupt_dev[line - 3];
     int dev_no = -1;
+    int sem_index = getDeviceIndex(line, dev_no);
 
     // Trova il device specifico che ha causato l'interrupt
     for (int i = 0; i < 8; i++) {
