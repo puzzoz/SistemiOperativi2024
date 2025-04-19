@@ -171,4 +171,4 @@ pcb_t* current_process() { return (getPRID() < NCPU) ? currentProcess[getPRID()]
 
 struct list_head* ready_queue() { return &readyQueue; }
 
-int *device_semaphores(int devNo) { return (devNo < NCPU) ? deviceSemaphores[devNo] : NULL; }
+int *device_semaphores(unsigned int devNo) { return (devNo < NCPU) ? deviceSemaphores[devNo] : NULL; }

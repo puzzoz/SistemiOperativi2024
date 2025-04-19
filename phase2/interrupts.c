@@ -63,7 +63,7 @@ static int getDeviceIndex(int line, int dev_no) {
 }
 
 // Interrupt da device: trova chi ha fatto interrupt, fa ACK e sblocca il processo
-void handleDeviceInterrupt(int line, int cause, state_t *exception_state) {
+void handleDeviceInterrupt(int line, unsigned int cause, state_t *exception_state) {
     ACQUIRE_LOCK(global_lock());
     devregarea_t *dev_area = (devregarea_t *)RAMBASEADDR;
     unsigned int bitmap = dev_area->interrupt_dev[line - 3];
@@ -120,7 +120,7 @@ void handleDeviceInterrupt(int line, int cause, state_t *exception_state) {
 }
 
 // Smista gli interrupt alla funzione giusta in base alla linea
-void dispatchInterrupt(int cause, state_t *exception_state) {
+void dispatchInterrupt(unsigned int cause, state_t *exception_state) {
     if (CAUSE_IP_GET(cause, IL_CPUTIMER))
         handlePLTInterrupt(exception_state);
     else if (CAUSE_IP_GET(cause, IL_TIMER))

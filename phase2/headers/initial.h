@@ -15,7 +15,7 @@ int* process_count(); //num di processi iniziati ma non ancora terminati
 
 pcb_t* current_process();
 
-int *device_semaphores(int devNo); // 2 semafori per ogni subdevice
+int *device_semaphores(unsigned int devNo); // 2 semafori per ogni subdevice
 
 //queue dei PCB in READY state
 struct list_head* ready_queue();
