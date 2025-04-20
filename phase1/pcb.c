@@ -33,15 +33,30 @@ void freePcb(pcb_t* p) {
 }
 
 pcb_t* allocPcb() {
+    if (list_empty(&pcbFree_h))
+        return NULL;
+
+    // Ottieni il primo nodo della lista libera
+    struct list_head *node = pcbFree_h.next;
+    list_del(node); // Rimuovi il nodo dalla lista
+
+    // Converti il nodo in pcb_t
+    pcb_t *p = getPcb(node);
+
+    // Inizializza i campi del PCB
+    INIT_LIST_HEAD(&p->p_list);
+
+    /* originale:
     if (list_empty(&pcbFree_h)) return NULL; //se la lista di PCB disponibili è vuota ritorna NULL
     else {
         //recupera il primo PCB libero della lista, prende il puntatore alla struttura pcb_t del primo elemento della lista
         pcb_t *p = getPcb((&pcbFree_h)->next);
         //rimuove il primo elemento della lista dei PCB liberi, aggiornando poi la lista
         list_del((&pcbFree_h)->next);
-
         //inizializzo la coda dei processi child e siblings
         INIT_LIST_HEAD(&(p->p_list)); //prima inizializzo p_list come lista vuota
+        */
+
         INIT_LIST_HEAD(&(p->p_child)); //poi inizializzo la lista dei figli
 
         //imposto il padre del PCB a NULL perchè è il primo PCB
@@ -61,8 +76,6 @@ pcb_t* allocPcb() {
         p->dev_no = -1;
         
         return p;
-    }
-
 }
 
 void mkEmptyProcQ(struct list_head* head) {
