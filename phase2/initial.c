@@ -141,6 +141,7 @@ int main(){
 
 
     for (int i = 0; i < NCPU; i++) {
+        currentProcess[i] = allocPcb();
         currentProcess[i]->p_s.status = MSTATUS_MPP_M;
         currentProcess[i]->p_s.pc_epc = (memaddr) scheduler;
         if(i>=1){
