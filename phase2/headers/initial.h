@@ -12,9 +12,8 @@ extern unsigned int softBlockCount;
 extern int clock_sem;
 
 int* process_count(); //num di processi iniziati ma non ancora terminati
-extern pcb_t* currentProcess[];
 
-pcb_t* current_process();
+pcb_t** current_process();
 
 int *device_semaphores(unsigned int devNo); // 2 semafori per ogni subdevice
 

@@ -47,11 +47,11 @@ static void handlePseudoClockInterrupt(state_t *exception_state) {
 // Interrupt del PLT: fine time slice per il processo corrente
 static void handlePLTInterrupt(state_t *exception_state) {
     setTIMER(-1); // ACK del PLT
-    updateCPUtime(current_process());
-    saveState(&(current_process()->p_s), exception_state);
+    updateCPUtime(*current_process());
+    saveState(&((*current_process())->p_s), exception_state);
 
     ACQUIRE_LOCK(global_lock());
-    insertProcQ(ready_queue(), current_process()); // rimettilo in ready
+    insertProcQ(ready_queue(), *current_process()); // rimettilo in ready
     RELEASE_LOCK(global_lock());
 
     scheduler();

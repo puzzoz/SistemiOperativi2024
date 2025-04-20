@@ -168,7 +168,7 @@ int* process_count() { return &processCount; }
 
 unsigned int* global_lock() { return &globalLock; }
 
-pcb_t* current_process() { return (getPRID() < NCPU) ? currentProcess[getPRID()] : NULL; }
+pcb_t** current_process() { return (getPRID() < NCPU) ? &currentProcess[getPRID()] : NULL; }
 
 struct list_head* ready_queue() { return &readyQueue; }
 

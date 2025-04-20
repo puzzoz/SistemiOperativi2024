@@ -49,7 +49,7 @@ void removePcb(pcb_t* pcb) { // NOLINT(*-no-recursion)
 }
 
 void passUpOrDie(unsigned int excIndex) { MUTEX_GLOBAL(
-    pcb_t *curr_p = current_process();
+    pcb_t *curr_p = *current_process();
     context_t passUpContext;
     if (curr_p->p_supportStruct != NULL) {
         // Pass Up
@@ -76,7 +76,7 @@ void syscallExcHandler() {
             switch (excState->reg_a0) {
                 case CREATEPROCESS: {
                     MUTEX_GLOBAL(
-                            pcb_t *curr_p = current_process();
+                            pcb_t *curr_p = *current_process();
                             pcb_t *new_p = allocPcb();
                             if (new_p == NULL) EXC_RETURN(excState, -1)
                             // aggiunge il nuovo processo all'albero dei processi
@@ -92,7 +92,7 @@ void syscallExcHandler() {
                 }
                 case TERMPROCESS:
                 MUTEX_GLOBAL(
-                        freePcb(current_process());
+                        freePcb(*current_process());
                         (*process_count())--;
                 )
                     break;
@@ -102,7 +102,7 @@ void syscallExcHandler() {
                     MUTEX_GLOBAL(if (*sem->s_key > 0) {
                         (*sem->s_key)--;
                     } else {
-                        blockPcb(sem->s_key, current_process(), excState);
+                        blockPcb(sem->s_key, *current_process(), excState);
                         callScheduler = 1;
                     })
                     if (callScheduler) scheduler();
@@ -114,7 +114,7 @@ void syscallExcHandler() {
                     MUTEX_GLOBAL(if (*sem->s_key < 1) {
                         (*sem->s_key)++;
                     } else {
-                        blockPcb(sem->s_key, current_process(), excState);
+                        blockPcb(sem->s_key, *current_process(), excState);
                         callScheduler = 1;
                     })
                     if (callScheduler) scheduler();
@@ -123,7 +123,7 @@ void syscallExcHandler() {
                 case DOIO:
                     //blocco il processo sul semaforo a cui fa riferimento commandAddr
                 MUTEX_GLOBAL(
-                        pcb_t *curr_p = current_process();
+                        pcb_t *curr_p = *current_process();
                         curr_p->p_semAdd = (int *) excState->reg_a1;
                         blockPcb((int *) excState->reg_a1, curr_p, excState);
                 )
@@ -133,18 +133,18 @@ void syscallExcHandler() {
                     break;
                 case GETTIME:
                 MUTEX_GLOBAL(
-                        EXC_RETURN(excState, current_process()->p_time))
+                        EXC_RETURN(excState, (*current_process())->p_time))
                 case CLOCKWAIT: {
                     MUTEX_GLOBAL(
-                            blockPcb(&clock_sem, current_process(), excState);
+                            blockPcb(&clock_sem, *current_process(), excState);
                     )
                     scheduler();
                     break;
                 }
-                case GETSUPPORTPTR: EXC_RETURN(excState, (unsigned int) current_process()->p_supportStruct)
+                case GETSUPPORTPTR: EXC_RETURN(excState, (unsigned int) (*current_process())->p_supportStruct)
                 case GETPROCESSID:
                 MUTEX_GLOBAL(
-                        pcb_t *curr_pr = current_process();
+                        pcb_t *curr_pr = *current_process();
                         if (excState->reg_a1 == 0) {
                             EXC_RETURN(excState, curr_pr->p_pid)
                         } else {

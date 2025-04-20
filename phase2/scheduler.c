@@ -58,7 +58,7 @@ void scheduler() {
         }
     } else {
         //ready queue non vuota --> primo pcb rimosso e assegnazione a currentProcess --> global lock rilasciato
-        currentProcess[0] = removeProcQ(ready_queue());
+        *current_process() = removeProcQ(ready_queue());
         RELEASE_LOCK(global_lock());
     }
 
@@ -66,7 +66,7 @@ void scheduler() {
 
     STCK(sliceStart); //
 
-    LDST(&((current_process(0))->p_s)); //stato del processore caricato dal pcb corrente
+    LDST(&((*current_process())->p_s)); //stato del processore caricato dal pcb corrente
 }
 
 #endif //MULTIPANDOS_SCHEDULER_H
