@@ -24,10 +24,9 @@ volatile cpu_t sliceStart;
 void scheduler() {
     ACQUIRE_LOCK(global_lock()); //prende il GL prima di accedere alla ready queue
 
-    if (!emptyProcQ(ready_queue())) {
+    if (emptyProcQ(ready_queue())) {
         //ready queue vuota --> rilascia il lock e poi prosegue
         RELEASE_LOCK(global_lock());
-
         if (process_count() == 0) {
             //0 processi attivi --> termina
             HALT();
