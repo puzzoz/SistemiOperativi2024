@@ -5,7 +5,6 @@
 #include <uriscv/liburiscv.h>
 #include <uriscv/const.h>
 #include "headers/initial.h"
-#include "../phase1/headers/pcb.h"
 #include "headers/scheduler.h"
 
 #define MUSEC_TO_TICKS(T) ((T) * (*((cpu_t *)TIMESCALEADDR)))

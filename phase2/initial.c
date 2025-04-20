@@ -25,7 +25,7 @@ __attribute__((unused)) void memset(void *dest, int value, size_t n)
 unsigned int softBlockCount;
 
 //queue dei PCB in READY state
-struct list_head readyQueue;
+list_head readyQueue;
 
 
 //vettore di pointer ai pcb con state "running" in ogni CPU currentProcess
@@ -107,7 +107,6 @@ void instantiateProcess() {
         newProcess->p_supportStruct = NULL;
 
         insertProcQ(&readyQueue, newProcess);
-
         processCount++;
     }
 }
@@ -133,15 +132,16 @@ void interruptRouting(){
 
 int main(){
     initializePassUpVector();
-
-    initPcbs();
-    initASL();
-    
     initializeVariables();
 
-    LDIT(PSECOND * (*((memaddr *)TIMESCALEADDR)));
-    
+    initPcbs();
     instantiateProcess();
+    HALT();
+    initASL();
+    
+
+    LDIT(PSECOND * (*((memaddr *)TIMESCALEADDR)));
+
 
     for (int i = 0; i < NCPU-1; i++) {
         currentProcess[i]->p_s.status = MSTATUS_MPP_M;
