@@ -83,7 +83,7 @@ void handleDeviceInterrupt(int line, unsigned int cause, state_t *exception_stat
         return; // nessun device attivo trovato
     }
 
-    int dev_index = getDeviceIndex(line, dev_no);
+
     unsigned int dev_status = 0;
 
     // Gestione speciale per i terminali (2 sub-device)
