@@ -72,8 +72,6 @@ void initializeVariables(){
 
     INIT_LIST_HEAD(&readyQueue);
 
-    memset(&readyQueue, 0, sizeof(pcb_t));
-
     for (int i = 0; i < NCPU; i++) {
         currentProcess[i] = NULL;
     }
@@ -136,7 +134,6 @@ int main(){
 
     initPcbs();
     instantiateProcess();
-    HALT();
     initASL();
     
 
