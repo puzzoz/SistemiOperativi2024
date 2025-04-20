@@ -24,7 +24,7 @@ volatile cpu_t sliceStart;
 void scheduler() {
     ACQUIRE_LOCK(global_lock()); //prende il GL prima di accedere alla ready queue
 
-    if (emptyProcQ(ready_queue())) {
+    if (!emptyProcQ(ready_queue())) {
         //ready queue vuota --> rilascia il lock e poi prosegue
         RELEASE_LOCK(global_lock());
 
@@ -58,7 +58,7 @@ void scheduler() {
         }
     } else {
         //ready queue non vuota --> primo pcb rimosso e assegnazione a currentProcess --> global lock rilasciato
-        *current_process(0) = *removeProcQ(ready_queue());
+        currentProcess[0] = removeProcQ(ready_queue());
         RELEASE_LOCK(global_lock());
     }
 

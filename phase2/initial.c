@@ -68,6 +68,7 @@ void initializePassUpVector() {
 
 void initializeVariables(){
     processCount = 0;
+    softBlockCount = 0;
 
     INIT_LIST_HEAD(&readyQueue);
 

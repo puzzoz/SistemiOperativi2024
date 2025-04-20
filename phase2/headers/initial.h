@@ -12,6 +12,7 @@ extern unsigned int softBlockCount;
 extern int clock_sem;
 
 int* process_count(); //num di processi iniziati ma non ancora terminati
+extern pcb_t* currentProcess[];
 
 pcb_t* current_process();
 
