@@ -97,24 +97,32 @@ void passeren(state_t *excState) {
     semd_t *sem = ((semd_t *) excState->reg_a1);
     unsigned int callScheduler = 0;
     MUTEX_GLOBAL(
-            if (*sem->s_key > 0) {
-                (*sem->s_key)--;
-            } else {
-                blockPcb(sem->s_key, *current_process(), excState);
-                callScheduler = 1;
-            }
+        if (*sem->s_key <= 0) {
+            blockPcb(sem->s_key, *current_process(), excState);
+            callScheduler = 1;
+        } else if (headBlocked(sem->s_key) != NULL) {
+            // il semaforo blocca un processo
+            insertProcQ(ready_queue(), removeBlocked(sem->s_key));
+        } else {
+            (*sem->s_key)--;
+        }
     )
     if (callScheduler) scheduler();
 }
 void verhogen(state_t *excState) {
     semd_t *sem = ((semd_t *) excState->reg_a1);
     unsigned int callScheduler = 0;
-    MUTEX_GLOBAL(if (*sem->s_key < 1) {
-        (*sem->s_key)++;
-    } else {
-        blockPcb(sem->s_key, *current_process(), excState);
-        callScheduler = 1;
-    })
+    MUTEX_GLOBAL(
+        if (*sem->s_key >= 1) {
+            blockPcb(sem->s_key, *current_process(), excState);
+            callScheduler = 1;
+        } else if (headBlocked(sem->s_key) != NULL) {
+            // il semaforo blocca un processo
+            insertProcQ(ready_queue(), removeBlocked(sem->s_key));
+        } else {
+            (*sem->s_key)++;
+        }
+    )
     if (callScheduler) scheduler();
 }
 void doio(state_t *excState) {
@@ -153,12 +161,12 @@ void getProcessId(state_t *excState) {
     )
 }
 
-void syscallExcHandler() {
+void syscallExcHandler(int sysCall) {
     state_t* excState = GET_EXCEPTION_STATE_PTR(getPRID());
-    if (excState->reg_a0 <= 0) {
+    if (sysCall <= 0) {
         // negative SYSCALL
         if (EXCEPTION_IN_KERNEL_MODE(excState)) {
-            switch (excState->reg_a0) {
+            switch (sysCall) {
                 case CREATEPROCESS:
                     createProcess(excState); break;
                 case TERMPROCESS:
@@ -194,6 +202,7 @@ void syscallExcHandler() {
 void tlbExcHandler() { passUpOrDie(PGFAULTEXCEPT); }
 
 void exceptionHandler() {
+    int sysCall = GET_EXCEPTION_STATE_PTR(getPRID())->reg_a0;
     unsigned int cause = getCAUSE();
     if (CAUSE_IS_INT(cause)) interruptExcHandler(); // interrupt exception handling
     else {
@@ -201,7 +210,7 @@ void exceptionHandler() {
             case EXC_ECU:
             case EXC_ECM:
                 // SYSCALL exception handling
-                syscallExcHandler();
+                syscallExcHandler(sysCall);
                 break;
             case EXC_IAM ... EXC_SAF:
             case EXC_ECS ... (EXC_ECM-1):
