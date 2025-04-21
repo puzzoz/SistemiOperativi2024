@@ -97,7 +97,7 @@ void passeren(state_t *excState) {
     semd_t *sem = ((semd_t *) excState->reg_a1);
     unsigned int callScheduler = 0;
     MUTEX_GLOBAL(
-        if (*sem->s_key <= 0) {
+        if (*sem->s_key == 0) {
             blockPcb(sem->s_key, *current_process(), excState);
             callScheduler = 1;
         } else if (headBlocked(sem->s_key) != NULL) {
@@ -113,7 +113,7 @@ void verhogen(state_t *excState) {
     semd_t *sem = ((semd_t *) excState->reg_a1);
     unsigned int callScheduler = 0;
     MUTEX_GLOBAL(
-        if (*sem->s_key >= 1) {
+        if (*sem->s_key == 1) {
             blockPcb(sem->s_key, *current_process(), excState);
             callScheduler = 1;
         } else if (headBlocked(sem->s_key) != NULL) {
