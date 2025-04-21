@@ -51,6 +51,7 @@ void removePcb(pcb_t* pcb) { // NOLINT(*-no-recursion)
 void passUpOrDie(unsigned int excIndex) { MUTEX_GLOBAL(
     pcb_t *curr_p = *current_process();
     context_t passUpContext;
+    unsigned int dead = 0;
     if (curr_p->p_supportStruct != NULL) {
         // Pass Up
         state_t* excState = GET_EXCEPTION_STATE_PTR(getPRID());
@@ -59,9 +60,9 @@ void passUpOrDie(unsigned int excIndex) { MUTEX_GLOBAL(
     } else {
         // Die
         removePcb(curr_p);
-        return; // non esegue LDCXT
+        dead = 1; // non esegue LDCXT
     })
-    LDCXT(passUpContext.stackPtr, passUpContext.status, passUpContext.pc);
+    if (!dead) LDCXT(passUpContext.stackPtr, passUpContext.status, passUpContext.pc);
 }
 
 void interruptExcHandler() { dispatchInterrupt(getCAUSE(), GET_EXCEPTION_STATE_PTR(getPRID())); }
