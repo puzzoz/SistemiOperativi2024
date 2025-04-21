@@ -145,6 +145,7 @@ pcb_t* removeChild(pcb_t* p) {
     else {
         //risalgo al primo figlio utilizando i fratelli 
         pcb_t *first_child = container_of(list_next(&(p->p_child)), pcb_t, p_sib);
+        invariant(&(first_child->p_sib))
         list_del(&(first_child->p_sib)); //rimuovo dalla lista dei siblings
         first_child->p_parent = NULL; //elimino il puntatore dal figlio al padre
         
