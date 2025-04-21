@@ -41,9 +41,8 @@ extern void uTLB_RefillHandler(void);
 
 
 void initializePassUpVector() {
-    for (int cpu_id = 0; cpu_id < NCPU; cpu_id++){ 
-        passupvector_t *passupvector = (passupvector_t *)(BIOSDATAPAGE + (cpu_id * sizeof(passupvector_t)));
-
+    for (int cpu_id = 0; cpu_id < NCPU; cpu_id++){
+        passupvector_t *passupvector = (passupvector_t *)(0x0FFFF900 + (cpu_id * sizeof(passupvector_t)));
         
         passupvector->tlb_refill_handler = (memaddr)uTLB_RefillHandler;
 
@@ -51,7 +50,7 @@ void initializePassUpVector() {
         if (cpu_id == 0) {
             passupvector->tlb_refill_stackPtr = KERNELSTACK;
         } else {
-            passupvector->tlb_refill_stackPtr = 0x20020000 + (cpu_id * PAGESIZE);
+            passupvector->tlb_refill_stackPtr = RAMSTART + ((cpu_id + 64) * PAGESIZE);
         }
 
         
