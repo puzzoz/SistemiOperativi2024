@@ -8,7 +8,8 @@
 #include "../phase1/headers/asl.h"
 #include <uriscv/liburiscv.h>
 #include <uriscv/cpu.h>
-
+#define DEVICE_SEMS 48
+#define PSEUDO_CLOCK_SEM  DEVICE_SEMS
 #define EXCEPTION_IN_KERNEL_MODE(excStatus) (excStatus->status & MSTATUS_MPP_MASK)
 #define CAUSE_GET_EXCCODE(x) ((x)&CAUSE_EXCCODE_MASK)
 
@@ -137,7 +138,7 @@ void getTime(state_t *excState) {
 }
 void clockWait(state_t *excState) {
     MUTEX_GLOBAL(
-        blockPcb(&clock_sem, *current_process(), excState);
+        blockPcb(device_semaphores(PSEUDO_CLOCK_SEM), *current_process(), excState);
     )
     scheduler();
 }
