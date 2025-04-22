@@ -94,33 +94,33 @@ void termProcess() {
     )
 }
 void passeren(state_t *excState) {
-    semd_t *sem = ((semd_t *) excState->reg_a1);
+    int *sem = ((int *) excState->reg_a1);
     unsigned int callScheduler = 0;
     MUTEX_GLOBAL(
-        if (*sem->s_key == 0) {
-            blockPcb(sem->s_key, *current_process(), excState);
+        if (*sem <= 0) {
+            blockPcb(sem, *current_process(), excState);
             callScheduler = 1;
-        } else if (headBlocked(sem->s_key) != NULL) {
+        } else if (headBlocked(sem) != NULL) {
             // il semaforo blocca un processo
-            insertProcQ(ready_queue(), removeBlocked(sem->s_key));
+            insertProcQ(ready_queue(), removeBlocked(sem));
         } else {
-            (*sem->s_key)--;
+            (*sem)--;
         }
     )
     if (callScheduler) scheduler();
 }
 void verhogen(state_t *excState) {
-    semd_t *sem = ((semd_t *) excState->reg_a1);
+    int *sem = ((int *) excState->reg_a1);
     unsigned int callScheduler = 0;
     MUTEX_GLOBAL(
-        if (*sem->s_key == 1) {
-            blockPcb(sem->s_key, *current_process(), excState);
+        if (*sem >= 1) {
+            blockPcb(sem, *current_process(), excState);
             callScheduler = 1;
-        } else if (headBlocked(sem->s_key) != NULL) {
+        } else if (headBlocked(sem) != NULL) {
             // il semaforo blocca un processo
-            insertProcQ(ready_queue(), removeBlocked(sem->s_key));
+            insertProcQ(ready_queue(), removeBlocked(sem));
         } else {
-            (*sem->s_key)++;
+            (*sem)++;
         }
     )
     if (callScheduler) scheduler();
@@ -161,12 +161,13 @@ void getProcessId(state_t *excState) {
     )
 }
 
-void syscallExcHandler(int sysCall) {
+void syscallExcHandler() {
     state_t* excState = GET_EXCEPTION_STATE_PTR(getPRID());
-    if (sysCall <= 0) {
+    int syscall = excState->reg_a0;
+    if (syscall <= 0) {
         // negative SYSCALL
         if (EXCEPTION_IN_KERNEL_MODE(excState)) {
-            switch (sysCall) {
+            switch (syscall) {
                 case CREATEPROCESS:
                     createProcess(excState); break;
                 case TERMPROCESS:
@@ -202,7 +203,6 @@ void syscallExcHandler(int sysCall) {
 void tlbExcHandler() { passUpOrDie(PGFAULTEXCEPT); }
 
 void exceptionHandler() {
-    int sysCall = GET_EXCEPTION_STATE_PTR(getPRID())->reg_a0;
     unsigned int cause = getCAUSE();
     if (CAUSE_IS_INT(cause)) interruptExcHandler(); // interrupt exception handling
     else {
@@ -210,7 +210,7 @@ void exceptionHandler() {
             case EXC_ECU:
             case EXC_ECM:
                 // SYSCALL exception handling
-                syscallExcHandler(sysCall);
+                syscallExcHandler();
                 break;
             case EXC_IAM ... EXC_SAF:
             case EXC_ECS ... (EXC_ECM-1):
