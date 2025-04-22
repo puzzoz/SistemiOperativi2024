@@ -38,7 +38,7 @@ static void handlePseudoClockInterrupt(state_t *exception_state) {
     RELEASE_LOCK(global_lock());
 
     // Se c'è un processo in esecuzione, lo riprende
-    if (current_process())
+    if (*current_process())
         LDST(exception_state);
     else
         scheduler();
@@ -124,20 +124,23 @@ void handleDeviceInterrupt(int line, unsigned int cause, state_t *exception_stat
 
 // Smista gli interrupt alla funzione giusta in base alla linea
 void dispatchInterrupt(unsigned int cause, state_t *exception_state) {
-    if (CAUSE_IP_GET(cause, IL_CPUTIMER))
-        handlePLTInterrupt(exception_state);
-    else if (CAUSE_IP_GET(cause, IL_TIMER))
-        handlePseudoClockInterrupt(exception_state);
-    else if (CAUSE_IP_GET(cause, IL_DISK))
-        handleDeviceInterrupt(IL_DISK, cause, exception_state);
-    else if (CAUSE_IP_GET(cause, IL_FLASH))
-        handleDeviceInterrupt(IL_FLASH, cause, exception_state);
-    else if (CAUSE_IP_GET(cause, IL_ETHERNET))
-        handleDeviceInterrupt(IL_ETHERNET, cause, exception_state);
-    else if (CAUSE_IP_GET(cause, IL_PRINTER))
-        handleDeviceInterrupt(IL_PRINTER, cause, exception_state);
-    else if (CAUSE_IP_GET(cause, IL_TERMINAL))
-        handleDeviceInterrupt(IL_TERMINAL, cause, exception_state);
+    unsigned int excCode = cause & CAUSE_EXCCODE_MASK;
+
+    switch (excCode) {
+        case IL_CPUTIMER:
+            handlePLTInterrupt(exception_state);
+            break;
+        case IL_TIMER:
+            handlePseudoClockInterrupt(exception_state);
+            break;
+        case IL_DISK:     case IL_FLASH:
+        case IL_ETHERNET: case IL_PRINTER:
+        case IL_TERMINAL:
+            handleDeviceInterrupt(excCode, cause, exception_state);
+            break;
+        default:
+            break;
+    }
 }
 
 #endif // MULTIPANDOS_INTERRUPTS_H
