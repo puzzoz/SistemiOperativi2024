@@ -93,13 +93,12 @@ void termProcess() {
         (*process_count())--;
     )
 }
-void passeren(state_t *excState) {
-    int *sem = ((int *) excState->reg_a1);
-    unsigned int callScheduler = 0;
+unsigned int passeren(int *sem, state_t *excState) {
+    unsigned int blocked = 0;
     MUTEX_GLOBAL(
         if (*sem <= 0) {
             blockPcb(sem, *current_process(), excState);
-            callScheduler = 1;
+            blocked = 1;
         } else if (headBlocked(sem) != NULL) {
             // il semaforo blocca un processo
             insertProcQ(ready_queue(), removeBlocked(sem));
@@ -107,15 +106,14 @@ void passeren(state_t *excState) {
             (*sem)--;
         }
     )
-    if (callScheduler) scheduler();
+    return blocked;
 }
-void verhogen(state_t *excState) {
-    int *sem = ((int *) excState->reg_a1);
-    unsigned int callScheduler = 0;
+unsigned int verhogen(int *sem, state_t *excState) {
+    unsigned int blocked = 0;
     MUTEX_GLOBAL(
         if (*sem >= 1) {
             blockPcb(sem, *current_process(), excState);
-            callScheduler = 1;
+            blocked = 1;
         } else if (headBlocked(sem) != NULL) {
             // il semaforo blocca un processo
             insertProcQ(ready_queue(), removeBlocked(sem));
@@ -123,18 +121,14 @@ void verhogen(state_t *excState) {
             (*sem)++;
         }
     )
-    if (callScheduler) scheduler();
+    return blocked;
 }
 void doio(state_t *excState) {
-    //blocco il processo sul semaforo a cui fa riferimento commandAddr
-    MUTEX_GLOBAL(
-        pcb_t *curr_p = *current_process();
-        curr_p->p_semAdd = (int *) excState->reg_a1;
-        blockPcb((int *) excState->reg_a1, curr_p, excState);
-    )
-    //Scrivo il comando nel Registro
-    excState->reg_a1 = excState->reg_a2;
-    scheduler();
+    devreg_t *dev = (devreg_t *) excState->reg_a1;
+    unsigned int blocked = passeren(device_semaphores(DEV_NO_BY_DEV_ADDR(dev)), excState);
+    dev->dtp.command = excState->reg_a2;
+    if (blocked) scheduler();
+    excState->reg_a0 = dev->dtp.status;
 }
 void getTime(state_t *excState) {
     MUTEX_GLOBAL(
@@ -163,7 +157,7 @@ void getProcessId(state_t *excState) {
 
 void syscallExcHandler() {
     state_t* excState = GET_EXCEPTION_STATE_PTR(getPRID());
-    int syscall = excState->reg_a0;
+    int syscall = excState->reg_a0; // non salvare il valore del registro in una variabile causa comportamenti inaspettati
     if (syscall <= 0) {
         // negative SYSCALL
         if (EXCEPTION_IN_KERNEL_MODE(excState)) {
@@ -173,9 +167,11 @@ void syscallExcHandler() {
                 case TERMPROCESS:
                     termProcess(); break;
                 case PASSEREN:
-                    passeren(excState); break;
+                    if (passeren(((int *) excState->reg_a1), excState)) scheduler();
+                    break;
                 case VERHOGEN:
-                    verhogen(excState); break;
+                    if (verhogen(((int *) excState->reg_a1), excState)) scheduler();
+                    break;
                 case DOIO:
                     doio(excState); break;
                 case GETTIME:
