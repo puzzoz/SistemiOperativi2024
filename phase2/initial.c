@@ -5,7 +5,8 @@
 #include "../phase1/headers/asl.h"
 #include "../phase1/headers/pcb.h"
 #include "./headers/scheduler.h"
-
+#define DEVICE_SEMS 48
+#define PSEUDO_CLOCK_SEM  DEVICE_SEMS
 #endif //MULTIPANDOS_INITIAL_H
 
 //LEVEL 3 GLOBAL VARIABLES
@@ -31,7 +32,8 @@ list_head readyQueue;
 //vettore di pointer ai pcb con state "running" in ogni CPU currentProcess
 pcb_t *currentProcess[NCPU];
 
-int deviceSemaphores[NCPU][2]; // 2 semafori per ogni subdevice
+//int deviceSemaphores[NCPU][2]; // 2 semafori per ogni subdevice
+int deviceSemaphores[DEVICE_SEMS+1];
 
 unsigned int globalLock; //puo' avere solo valore 0 e 1
 
@@ -169,4 +171,5 @@ pcb_t** current_process() { return (getPRID() < NCPU) ? &currentProcess[getPRID(
 
 struct list_head* ready_queue() { return &readyQueue; }
 
-int *device_semaphores(unsigned int devNo) { return (devNo < NCPU) ? deviceSemaphores[devNo] : NULL; }
+//int *device_semaphores(unsigned int devNo) { return (devNo < NCPU) ? deviceSemaphores[devNo] : NULL; }
+int *device_semaphores(unsigned int devNo) {return (devNo <= PSEUDO_CLOCK_SEM) ? &deviceSemaphores[devNo] : NULL; }
