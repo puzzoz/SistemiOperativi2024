@@ -26,7 +26,7 @@ void saveState(state_t *dest, state_t *src) {
 
 // Interrupt del clock di sistema (ogni 100ms): sblocca i processi in wait clock
 static void handlePseudoClockInterrupt(state_t *exception_state) {
-    setTIMER(PSECOND); // resetta il clock di sistema
+    LDIT(PSECOND * (*((cpu_t *)TIMESCALEADDR)));  // resetta il clock di sistema
     ACQUIRE_LOCK(global_lock());
     pcb_t *unblocked;
     // Sblocca tutti i processi che aspettavano il clock
