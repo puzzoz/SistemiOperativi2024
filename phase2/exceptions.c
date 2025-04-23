@@ -137,10 +137,7 @@ void getTime(state_t *excState) {
     )
 }
 void clockWait(state_t *excState) {
-    MUTEX_GLOBAL(
-        blockPcb(device_semaphores(PSEUDO_CLOCK_SEM), *current_process(), excState);
-    )
-    scheduler();
+    if (passeren(device_semaphores(PSEUDO_CLOCK_SEM), excState)) scheduler();
 }
 void getSupportPointer(state_t *excState) {
     MUTEX_GLOBAL(
