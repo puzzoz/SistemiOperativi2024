@@ -87,20 +87,34 @@ void handleDeviceInterrupt(int line, unsigned int cause, state_t *exception_stat
     // Gestione speciale per i terminali (2 sub-device)
     if (line == IL_TERMINAL) {
         termreg_t *term = (termreg_t *)DEVREGADDR(line, dev_no);
-        if ((term->transm_status & 0xFF) == BUSY || (term->transm_status & 0xFF) == READY) {
+        // Indici dei semafori per trasmissione e ricezione
+        int transm_sem = sem_index;
+        int recv_sem = sem_index + 1;
+        // Verifica se c'è un processo bloccato su uno dei due
+        int hasTransmBlocked = (headBlocked(device_semaphores(transm_sem)) != NULL);
+        int hasRecvBlocked = (headBlocked(device_semaphores(recv_sem)) != NULL);
+        if (hasTransmBlocked) {
             dev_status = term->transm_status;
             term->transm_command = ACK;
-        } else {
+            sem_index = transm_sem;
+        } else if (hasRecvBlocked) {
             dev_status = term->recv_status;
             term->recv_command = ACK;
-            sem_index += 1;
+            sem_index = recv_sem;
+        } else {
+            // Nessun processo bloccato, fallback su status attivo
+            if ((term->transm_status & 0xFF) == BUSY || (term->transm_status & 0xFF) == READY) {
+                dev_status = term->transm_status;
+                term->transm_command = ACK;
+                sem_index = transm_sem;
+            } else {
+                dev_status = term->recv_status;
+                term->recv_command = ACK;
+                sem_index = recv_sem;
+            }
         }
-    } else {
-        // Per gli altri device (disk, flash, ecc.)
-        dtpreg_t *dev = (dtpreg_t *)DEVREGADDR(line, dev_no);
-        dev_status = dev->status;
-        dev->command = ACK;
     }
+
 
     // Sblocca il processo che stava aspettando questo device
 
