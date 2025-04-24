@@ -23,8 +23,8 @@ void blockPcb(int *sem_key, pcb_t *pcb, state_t *excState) {
         STCK(now);
         pcb->p_time += now - sliceStart;
         //Salvo il contesto nel pcb e incremento il PC
-        pcb->p_s = *excState;
         excState->pc_epc += 4;
+        pcb->p_s = *excState;
     }
 }
 
@@ -104,7 +104,7 @@ unsigned int passeren(int *sem, state_t *excState) {
             // il semaforo blocca un processo
             insertProcQ(ready_queue(), removeBlocked(sem));
         } else {
-            (*sem)--;
+            *sem = 0;
         }
     )
     return blocked;
@@ -116,10 +116,9 @@ unsigned int verhogen(int *sem, state_t *excState) {
             blockPcb(sem, *current_process(), excState);
             blocked = 1;
         } else if (headBlocked(sem) != NULL) {
-            // il semaforo blocca un processo
             insertProcQ(ready_queue(), removeBlocked(sem));
         } else {
-            (*sem)++;
+            *sem = 1;
         }
     )
     return blocked;

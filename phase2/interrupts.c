@@ -27,19 +27,21 @@ void saveState(state_t *dest, state_t *src) {
 // Interrupt del clock di sistema (ogni 100ms): sblocca i processi in wait clock
 static void handlePseudoClockInterrupt(state_t *exception_state) {
     LDIT(PSECOND * (*((cpu_t *)TIMESCALEADDR)));  // resetta il clock di sistema
-    ACQUIRE_LOCK(global_lock());
-    pcb_t *unblocked;
-    // Sblocca tutti i processi che aspettavano il clock
-    while ((unblocked = removeBlocked(device_semaphores(PSEUDO_CLOCK_SEM))) != NULL) {
-        unblocked->p_s.gpr[10] = 0;
-        insertProcQ(ready_queue(), unblocked);
-        softBlockCount--;
-    }
-    RELEASE_LOCK(global_lock());
+    MUTEX_GLOBAL(
+        pcb_t *unblocked;
+        int *pseudoClockSem = device_semaphores(PSEUDO_CLOCK_SEM);
+        // Sblocca tutti i processi che aspettavano il clock
+        while ((unblocked = removeBlocked(pseudoClockSem)) != NULL) {
+            insertProcQ(ready_queue(), unblocked);
+            softBlockCount--;
+        }
+        *pseudoClockSem = 0;
+        unblocked = *current_process();
+    )
 
     // Se c'è un processo in esecuzione, lo riprende
-    if (*current_process())
-        LDST(exception_state);
+    if (unblocked != NULL)
+        LDST(&unblocked->p_s);
     else
         scheduler();
 }
