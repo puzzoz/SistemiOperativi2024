@@ -121,9 +121,9 @@ unsigned int verhogen(int *sem, state_t *excState) {
 void doio(state_t *excState) {
     devreg_t *dev = (devreg_t *) excState->reg_a1;
     unsigned int blocked = passeren(device_semaphores(DEV_NO_BY_DEV_ADDR(dev)), excState);
-    excState->reg_a0 = 5; //dev->dtp.status;
     dev->dtp.command = excState->reg_a2;
     if (blocked) scheduler();
+    excState->reg_a0 = dev->dtp.status;
 }
 void getTime(state_t *excState) {
     MUTEX_GLOBAL(
