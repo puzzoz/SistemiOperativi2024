@@ -1,18 +1,11 @@
-#ifndef MULTIPANDOS_INITIAL_H
-#define MULTIPANDOS_INITIAL_H
-
 #include "./headers/initial.h"
 #include "../phase1/headers/asl.h"
-#include "../phase1/headers/pcb.h"
 #include "./headers/scheduler.h"
-#define DEVICE_SEMS 48
-#define PSEUDO_CLOCK_SEM  DEVICE_SEMS
-#endif //MULTIPANDOS_INITIAL_H
+#include "headers/initial.h"
 
 //LEVEL 3 GLOBAL VARIABLES
 
 static int processCount = 0; //num di processi iniziati ma non ancora terminati
-int clock_sem = 0;
 
 typedef unsigned int size_t;
 __attribute__((unused)) void memset(void *dest, int value, size_t n)
@@ -32,8 +25,7 @@ list_head readyQueue;
 //vettore di pointer ai pcb con state "running" in ogni CPU currentProcess
 pcb_t *currentProcess[NCPU];
 
-//int deviceSemaphores[NCPU][2]; // 2 semafori per ogni subdevice
-int deviceSemaphores[DEVICE_SEMS+1];
+int deviceSemaphores[DEVICE_SEMS+1]; // 2 semafori per ogni subdevice
 
 unsigned int globalLock; //puo' avere solo valore 0 e 1
 

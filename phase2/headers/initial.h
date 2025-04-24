@@ -1,16 +1,19 @@
 #ifndef MULTIPANDOS_INITIAL_H
 #define MULTIPANDOS_INITIAL_H
+
 #include <uriscv/types.h>
 #include "../../headers/types.h"
 #include "../../phase1/headers/pcb.h"
 #include "../../headers/const.h"
+
+#define DEVICE_SEMS 48
+#define PSEUDO_CLOCK_SEM  DEVICE_SEMS
 
 #define MUTEX_GLOBAL(expr) ACQUIRE_LOCK(global_lock()); expr; RELEASE_LOCK(global_lock());
 #define DEV_NO_BY_DEV_ADDR(devAddr) (((unsigned int)devAddr - START_DEVREG) / sizeof(devreg_t))
 
 unsigned int* global_lock();
 extern unsigned int softBlockCount;
-extern int clock_sem;
 
 int* process_count(); //num di processi iniziati ma non ancora terminati
 

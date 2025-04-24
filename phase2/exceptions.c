@@ -1,6 +1,3 @@
-#ifndef MULTIPANDOS_EXCEPTIONS_H
-#define MULTIPANDOS_EXCEPTIONS_H
-
 #include "headers/exceptions.h"
 #include "headers/interrupts.h"
 #include "headers/initial.h"
@@ -8,8 +5,6 @@
 #include "../phase1/headers/asl.h"
 #include <uriscv/liburiscv.h>
 #include <uriscv/cpu.h>
-#define DEVICE_SEMS 48
-#define PSEUDO_CLOCK_SEM  DEVICE_SEMS
 #define EXCEPTION_IN_KERNEL_MODE(excStatus) (excStatus->status & MSTATUS_MPP_MASK)
 #define CAUSE_GET_EXCCODE(x) ((x)&CAUSE_EXCCODE_MASK)
 
@@ -126,9 +121,9 @@ unsigned int verhogen(int *sem, state_t *excState) {
 void doio(state_t *excState) {
     devreg_t *dev = (devreg_t *) excState->reg_a1;
     unsigned int blocked = passeren(device_semaphores(DEV_NO_BY_DEV_ADDR(dev)), excState);
+    excState->reg_a0 = 5; //dev->dtp.status;
     dev->dtp.command = excState->reg_a2;
     if (blocked) scheduler();
-    excState->reg_a0 = dev->dtp.status;
 }
 void getTime(state_t *excState) {
     MUTEX_GLOBAL(
@@ -218,5 +213,3 @@ void exceptionHandler() {
         }
     }
 }
-
-#endif //MULTIPANDOS_EXCEPTIONS_H

@@ -1,7 +1,3 @@
-#ifndef MULTIPANDOS_SCHEDULER_H
-#define MULTIPANDOS_SCHEDULER_H
-
-
 #include <uriscv/liburiscv.h>
 #include <uriscv/const.h>
 #include "headers/initial.h"
@@ -66,5 +62,3 @@ void scheduler() {
 
     LDST(&((*current_process())->p_s)); //stato del processore caricato dal pcb corrente
 }
-
-#endif //MULTIPANDOS_SCHEDULER_H

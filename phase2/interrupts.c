@@ -1,6 +1,3 @@
-#ifndef MULTIPANDOS_INTERRUPTS_H
-#define MULTIPANDOS_INTERRUPTS_H
-
 #include "headers/interrupts.h"
 #include <uriscv/const.h>
 #include "../headers/types.h"
@@ -9,7 +6,6 @@
 #include "headers/scheduler.h"
 #include "../phase1/headers/asl.h"
 
-#define PSEUDO_CLOCK_SEM 48
 #define DEVREGADDR(line, no) (RAMBASEADDR + 0x54 + ((line - 3) * DEVREGSIZE * DEVPERINT) + (no * DEVREGSIZE))
 
 // Aggiorna il tempo CPU del processo attuale
@@ -144,5 +140,3 @@ void dispatchInterrupt(unsigned int cause, state_t *exception_state) {
             break;
     }
 }
-
-#endif // MULTIPANDOS_INTERRUPTS_H
