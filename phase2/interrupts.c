@@ -2,8 +2,10 @@
 #include <uriscv/const.h>
 #include "../headers/types.h"
 #include <uriscv/liburiscv.h>
+#include <uriscv/cpu.h>
 #include "headers/initial.h"
 #include "headers/scheduler.h"
+#include "../phase1/headers/asl.h"
 #include "../phase1/headers/asl.h"
 
 #define DEVREGADDR(line, no) (RAMBASEADDR + 0x54 + ((line - 3) * DEVREGSIZE * DEVPERINT) + (no * DEVREGSIZE))
@@ -22,25 +24,22 @@ void saveState(state_t *dest, state_t *src) {
 
 // Interrupt del clock di sistema (ogni 100ms): sblocca i processi in wait clock
 static void handlePseudoClockInterrupt(state_t *exception_state) {
-    LDIT(PSECOND * (*((cpu_t *)TIMESCALEADDR)));  // resetta il clock di sistema
-    MUTEX_GLOBAL(
-        pcb_t *unblocked;
-        int *pseudoClockSem = device_semaphores(PSEUDO_CLOCK_SEM);
-        // Sblocca tutti i processi che aspettavano il clock
-        while ((unblocked = removeBlocked(pseudoClockSem)) != NULL) {
-            insertProcQ(ready_queue(), unblocked);
-            softBlockCount--;
-        }
-        *pseudoClockSem = 0;
-        unblocked = *current_process();
-    )
-
-    // Se c'è un processo in esecuzione, lo riprende
-    if (unblocked != NULL)
-        LDST(&unblocked->p_s);
-    else
+    LDIT(PSECOND);
+    int *pseudoClockSem = device_semaphores(PSEUDO_CLOCK_SEM);
+    ACQUIRE_LOCK(global_lock());
+    pcb_t *unblocked;
+    while ((unblocked = removeBlocked(pseudoClockSem)) != NULL) {
+        insertProcQ(ready_queue(), unblocked);
+        softBlockCount--;
+    }
+    RELEASE_LOCK(global_lock());
+    if (*current_process() != NULL)
+        LDST(exception_state);
+    } else {
         scheduler();
+    }
 }
+
 
 // Interrupt del PLT: fine time slice per il processo corrente
 static void handlePLTInterrupt(state_t *exception_state) {
@@ -61,31 +60,35 @@ static int getDeviceIndex(int line, int dev_no) {
 }
 
 // Interrupt da device: trova chi ha fatto interrupt, fa ACK e sblocca il processo
-void handleDeviceInterrupt(int line, unsigned int cause, state_t *exception_state) {
+void handleDeviceInterrupt(int excCode, state_t *exception_state) {
     ACQUIRE_LOCK(global_lock());
-    devregarea_t *dev_area = (devregarea_t *)RAMBASEADDR;
+    int line = -1;
+    switch (excCode) {
+        case IL_DISK:     line = 3; break;
+        case IL_FLASH:    line = 4; break;
+        case IL_ETHERNET: line = 5; break;
+        case IL_PRINTER:  line = 6; break;
+        case IL_TERMINAL: line = 7; break;
+    }
+    devregarea_t *dev_area = (devregarea_t *)0x10000040;
     unsigned int bitmap = dev_area->interrupt_dev[line - 3];
     int dev_no = -1;
-    int sem_index = getDeviceIndex(line, dev_no);
-
-    // Trova il device specifico che ha causato l'interrupt
     for (int i = 0; i < 8; i++) {
-        if (bitmap & (1 << i)) {
+        if (bitmap & (1u << i)) {
             dev_no = i;
             break;
         }
     }
-
-    if (dev_no == -1) {
+    if (dev_no < 0) {
         RELEASE_LOCK(global_lock());
-        return; // nessun device attivo trovato
+        return;  // ancora nessun sub-device in pending
     }
 
-
+    int sem_index = getDeviceIndex(line, dev_no);
     unsigned int dev_status = 0;
 
     // Gestione speciale per i terminali (2 sub-device)
-    if (line == IL_TERMINAL) {
+    if (excCode == IL_TERMINAL) {
         termreg_t *term = (termreg_t *)DEVREGADDR(line, dev_no);
         // Indici dei semafori per trasmissione e ricezione
         int transm_sem = sem_index;
@@ -145,12 +148,16 @@ void dispatchInterrupt(unsigned int cause, state_t *exception_state) {
         case IL_TIMER:
             handlePseudoClockInterrupt(exception_state);
             break;
-        case IL_DISK:     case IL_FLASH:
-        case IL_ETHERNET: case IL_PRINTER:
+        case IL_DISK:
+        case IL_FLASH:
+        case IL_ETHERNET:
+        case IL_PRINTER:
         case IL_TERMINAL:
-            handleDeviceInterrupt(excCode, cause, exception_state);
+            handleDeviceInterrupt(excCode, exception_state);
             break;
         default:
+
             break;
     }
+
 }
