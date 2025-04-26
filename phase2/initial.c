@@ -161,6 +161,6 @@ unsigned int* global_lock() { return &globalLock; }
 
 pcb_t** current_process() { return (getPRID() < NCPU) ? &currentProcess[getPRID()] : NULL; }
 
-struct list_head* ready_queue() { return &readyQueue; }
+list_head* ready_queue() { return &readyQueue; }
 
 int *device_semaphores(unsigned int devNo) {return (devNo <= PSEUDO_CLOCK_SEM) ? &deviceSemaphores[devNo] : NULL; }
