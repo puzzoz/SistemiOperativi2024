@@ -14,9 +14,7 @@ __attribute__((unused)) void memcpy(void *dest, const void *src, size_t n)
         ((char*)dest)[i] = ((char*)src)[i];
     }
 }
-
-void bp() {}
-
+void *bp(void *arg) { return arg; }
 void initPcbs() {
     //inizializza la pcbFree list, contiene tutti gli elementi dell'array statico MAXPROC PCBs
     INIT_LIST_HEAD(&pcbFree_h);
