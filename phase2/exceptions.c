@@ -123,7 +123,6 @@ void doio(state_t *excState) {
     unsigned int blocked = passeren(device_semaphores(DEV_NO_BY_DEV_ADDR(dev)), excState);
     dev->dtp.command = excState->reg_a2;
     if (blocked) scheduler();
-    excState->reg_a0 = dev->dtp.status;
 }
 void getTime(state_t *excState) {
     MUTEX_GLOBAL(
