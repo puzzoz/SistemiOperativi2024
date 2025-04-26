@@ -119,9 +119,9 @@ unsigned int verhogen(int *sem, state_t *excState) {
     return blocked;
 }
 void doio(state_t *excState) {
-    devreg_t *dev = (devreg_t *) excState->reg_a1;
-    unsigned int blocked = passeren(device_semaphores(DEV_NO_BY_DEV_ADDR(dev)), excState);
-    dev->dtp.command = excState->reg_a2;
+    unsigned int *commandAddr = (unsigned int *) excState->reg_a1;
+    unsigned int blocked = passeren(device_semaphores(DEV_NO_BY_DEV_ADDR(commandAddr - offsetof(dtpreg_t, command))), excState);
+    *commandAddr = excState->reg_a2;
     if (blocked) scheduler();
 }
 void getTime(state_t *excState) {
