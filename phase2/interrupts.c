@@ -71,8 +71,8 @@ void handleDeviceInterrupt(int excCode, state_t *exception_state) {
         case IL_PRINTER:  line = 6; break;
         case IL_TERMINAL: line = 7; break;
     }
-    devregarea_t *dev_area = (devregarea_t *)0x10000040;
-    unsigned int bitmap = dev_area->interrupt_dev[line - 3];
+    unsigned int bitmap = *((unsigned int *)(0x10000040 + (line - 3) * 4));
+
     int dev_no = -1;
     for (int i = 0; i < 8; i++) {
         if (bitmap & (1u << i)) {
@@ -141,7 +141,6 @@ void handleDeviceInterrupt(int excCode, state_t *exception_state) {
 // Smista gli interrupt alla funzione giusta in base alla linea
 void dispatchInterrupt(unsigned int cause, state_t *exception_state) {
     unsigned int excCode = cause & CAUSE_EXCCODE_MASK;
-
     switch (excCode) {
         case IL_CPUTIMER:
             handlePLTInterrupt(exception_state);
