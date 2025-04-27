@@ -62,7 +62,6 @@ static int getDeviceIndex(int line, int dev_no) {
 
 // Interrupt da device: trova chi ha fatto interrupt, fa ACK e sblocca il processo
 void handleDeviceInterrupt(int excCode, state_t *exception_state) {
-    ACQUIRE_LOCK(global_lock());
     int line = -1;
     switch (excCode) {
         case IL_DISK:     line = 3; break;
@@ -70,9 +69,13 @@ void handleDeviceInterrupt(int excCode, state_t *exception_state) {
         case IL_ETHERNET: line = 5; break;
         case IL_PRINTER:  line = 6; break;
         case IL_TERMINAL: line = 7; break;
+        default: return; // caso di errore di sicurezza
     }
+
+    // Legge il bitmap
     unsigned int bitmap = *((unsigned int *)(0x10000040 + (line - 3) * 4));
 
+    // Trova quale device ha fatto interrupt
     int dev_no = -1;
     for (int i = 0; i < 8; i++) {
         if (bitmap & (1u << i)) {
@@ -81,22 +84,23 @@ void handleDeviceInterrupt(int excCode, state_t *exception_state) {
         }
     }
     if (dev_no < 0) {
-        RELEASE_LOCK(global_lock());
-        return;  // ancora nessun sub-device in pending
+        return; // Nessun device pending
     }
 
     int sem_index = getDeviceIndex(line, dev_no);
     unsigned int dev_status = 0;
 
-    // Gestione speciale per i terminali (2 sub-device)
+    // Gestione terminali
     if (excCode == IL_TERMINAL) {
         termreg_t *term = (termreg_t *)DEVREGADDR(line, dev_no);
-        // Indici dei semafori per trasmissione e ricezione
         int transm_sem = sem_index;
         int recv_sem = sem_index + 1;
-        // Verifica se c'è un processo bloccato su uno dei due
-        int hasTransmBlocked = (headBlocked(device_semaphores(transm_sem)) != NULL);
-        int hasRecvBlocked = (headBlocked(device_semaphores(recv_sem)) != NULL);
+        int hasTransmBlocked, hasRecvBlocked;
+        MUTEX_GLOBAL(
+                hasTransmBlocked = (headBlocked(device_semaphores(transm_sem)) != NULL);
+                hasRecvBlocked = (headBlocked(device_semaphores(recv_sem)) != NULL);
+        )
+
         if (hasTransmBlocked) {
             dev_status = term->transm_status;
             term->transm_command = ACK;
@@ -106,7 +110,6 @@ void handleDeviceInterrupt(int excCode, state_t *exception_state) {
             term->recv_command = ACK;
             sem_index = recv_sem;
         } else {
-            // Nessun processo bloccato, fallback su status attivo
             if ((term->transm_status & 0xFF) == BUSY || (term->transm_status & 0xFF) == READY) {
                 dev_status = term->transm_status;
                 term->transm_command = ACK;
@@ -117,26 +120,34 @@ void handleDeviceInterrupt(int excCode, state_t *exception_state) {
                 sem_index = recv_sem;
             }
         }
+    } else {
+        // Device normale
+        devreg_t *dev = (devreg_t *)DEVREGADDR(line, dev_no);
+        dev_status = ((unsigned int *)dev)[0];     // status
+        ((unsigned int *)dev)[1] = ACK;             // command
     }
+    pcb_t *unblocked = NULL;
+    MUTEX_GLOBAL(
+            unblocked = removeBlocked(device_semaphores(sem_index));
+            if (unblocked != NULL) {
+                unblocked->p_s.reg_a0 = dev_status;
+                insertProcQ(ready_queue(), unblocked);
+                softBlockCount--;
+            }
+    )
 
+    pcb_t *cp = NULL;
+    MUTEX_GLOBAL(
+            cp = *current_process();
+    )
 
-    // Sblocca il processo che stava aspettando questo device
-
-    pcb_t *unblocked = removeBlocked(device_semaphores(sem_index));
-    if (unblocked != NULL) {
-        unblocked->p_s.reg_a0 = dev_status; // ritorna status del device in v0
-        insertProcQ(ready_queue(), unblocked);
-        softBlockCount--;
-    }
-
-    RELEASE_LOCK(global_lock());
-
-    // Riprende il processo se esiste, altrimenti schedula
-    if (current_process())
+    if (cp != NULL) {
         LDST(exception_state);
-    else
+    } else {
         scheduler();
+    }
 }
+
 
 // Smista gli interrupt alla funzione giusta in base alla linea
 void dispatchInterrupt(unsigned int cause, state_t *exception_state) {
