@@ -69,7 +69,9 @@ void initializeVariables(){
         currentProcess[i] = NULL;
     }
 
-    memset(deviceSemaphores, 0, sizeof(deviceSemaphores));
+    for (int i = 0; i < DEVICE_SEMS + 1; ++i) {
+        deviceSemaphores[i] = 0;
+    }
 
     globalLock = 0;
 }
