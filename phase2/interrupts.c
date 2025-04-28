@@ -139,7 +139,7 @@ void handleDeviceInterrupt(int excCode, state_t *exception_state) {
 
     if (unblocked != NULL) {
         unblocked->p_s.reg_a0 = dev_status;
-        LDST(&unblocked->p_s);
+        LDST(exception_state);
     } else {
         scheduler();
     }
