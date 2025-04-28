@@ -126,23 +126,18 @@ void handleDeviceInterrupt(int excCode, state_t *exception_state) {
         dev_status = ((unsigned int *)dev)[0];     // status
         ((unsigned int *)dev)[1] = ACK;             // command
     }
-    pcb_t *unblocked = NULL;
+
     MUTEX_GLOBAL(
-            unblocked = removeBlocked(device_semaphores(sem_index));
+            pcb_t *unblocked = removeBlocked(device_semaphores(sem_index));
             if (unblocked != NULL) {
-                unblocked->p_s.reg_a0 = dev_status;
                 insertProcQ(ready_queue(), unblocked);
                 softBlockCount--;
             }
     )
 
-    pcb_t *cp = NULL;
-    MUTEX_GLOBAL(
-            cp = *current_process();
-    )
-
-    if (cp != NULL) {
-        LDST(exception_state);
+    if (unblocked != NULL) {
+        unblocked->p_s.reg_a0 = dev_status;
+        LDST(&unblocked->p_s);
     } else {
         scheduler();
     }
