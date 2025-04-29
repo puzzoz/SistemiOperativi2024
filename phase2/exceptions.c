@@ -57,7 +57,11 @@ void passUpOrDie(unsigned int excIndex) { MUTEX_GLOBAL(
         removePcb(curr_p);
         dead = 1; // non esegue LDCXT
     })
-    if (!dead) LDCXT(passUpContext.stackPtr, passUpContext.status, passUpContext.pc);
+    if (!dead) {
+        LDCXT(passUpContext.stackPtr, passUpContext.status, passUpContext.pc);
+    } else {
+        scheduler();
+    }
 }
 
 void interruptExcHandler() { dispatchInterrupt(getCAUSE(), GET_EXCEPTION_STATE_PTR(getPRID())); }
