@@ -102,6 +102,7 @@ unsigned int passeren(int *sem, state_t *excState) {
         } else if (headBlocked(sem) != NULL) {
             // il semaforo blocca un processo
             insertProcQ(ready_queue(), removeBlocked(sem));
+            softBlockCount--;
         } else {
             *sem = 0;
         }
@@ -116,6 +117,7 @@ unsigned int verhogen(int *sem, state_t *excState) {
             blocked = 1;
         } else if (headBlocked(sem) != NULL) {
             insertProcQ(ready_queue(), removeBlocked(sem));
+            softBlockCount--;
         } else {
             *sem = 1;
         }

@@ -84,7 +84,7 @@ void instantiateProcess() {
         // inizializzo stato processore
         newProcess->p_s.status = MSTATUS_MIE_MASK | MSTATUS_MPP_M; // attivo interrupts and kernel mode
         newProcess->p_s.mie = MIE_ALL; // attivo tutti gli interrupts
-        newProcess->p_s.reg_sp = RAMTOP(newProcess->p_s.reg_sp); // SP settata a RAMTOP
+        RAMTOP(newProcess->p_s.reg_sp); // SP settata a RAMTOP
         newProcess->p_s.pc_epc = (memaddr)test; // program counter settato a test
 
         // inizializzo il pcb a null
