@@ -21,7 +21,6 @@ unsigned int softBlockCount;
 //queue dei PCB in READY state
 list_head readyQueue;
 
-
 //vettore di pointer ai pcb con state "running" in ogni CPU currentProcess
 pcb_t *currentProcess[NCPU];
 
@@ -37,17 +36,15 @@ extern void uTLB_RefillHandler(void);
 void initializePassUpVector() {
     for (int cpu_id = 0; cpu_id < NCPU; cpu_id++){
         passupvector_t *passupvector = (passupvector_t *)(0x0FFFF900 + (cpu_id * sizeof(passupvector_t)));
-        
+
         passupvector->tlb_refill_handler = (memaddr)uTLB_RefillHandler;
 
         // Stack Pointer per TLB-Refill event handler
         if (cpu_id == 0) {
             passupvector->tlb_refill_stackPtr = KERNELSTACK;
         } else {
-            passupvector->tlb_refill_stackPtr = RAMSTART + ((cpu_id + 64) * PAGESIZE);
+            passupvector->tlb_refill_stackPtr = RAMSTART + ((64 + cpu_id) * PAGESIZE);
         }
-
-        
         passupvector->exception_handler = (memaddr)exceptionHandler;
 
         // settiamo stack pointer
@@ -56,6 +53,7 @@ void initializePassUpVector() {
         } else {
             passupvector->exception_stackPtr = 0x20020000 + (cpu_id * PAGESIZE);
         }
+
     }
 }
 
@@ -80,35 +78,21 @@ extern void test();
 void instantiateProcess() {
     pcb_t *newProcess = allocPcb();
 
-    if (newProcess != NULL) {
-        // inizializzo stato processore
-        newProcess->p_s.status = MSTATUS_MIE_MASK | MSTATUS_MPP_M; // attivo interrupts and kernel mode
-        newProcess->p_s.mie = MIE_ALL; // attivo tutti gli interrupts
-        RAMTOP(newProcess->p_s.reg_sp); // SP settata a RAMTOP
-        newProcess->p_s.pc_epc = (memaddr)test; // program counter settato a test
 
-        // inizializzo il pcb a null
-        newProcess->p_parent = NULL;
-        newProcess->p_child.next = NULL;
-        newProcess->p_child.prev = NULL;
-        newProcess->p_sib.next = NULL;
-        newProcess->p_sib.prev = NULL;
-
-        newProcess->p_time = 0;
-        
-        newProcess->p_semAdd = NULL;
-        newProcess->p_supportStruct = NULL;
-
-        insertProcQ(&readyQueue, newProcess);
-        processCount++;
-    }
+    // inizializzo stato processore
+    newProcess->p_s.status = MSTATUS_MPIE_MASK | MSTATUS_MPP_M; // attivo interrupts and kernel mode
+    newProcess->p_s.mie = MIE_ALL; // attivo tutti gli interrupts
+    RAMTOP(newProcess->p_s.reg_sp); // SP settata a RAMTOP
+    insertProcQ(&readyQueue, newProcess);
+    processCount++;
+    newProcess->p_s.pc_epc = (memaddr)test; // program counter settato a test
 }
 
 void interruptRouting(){
     // configuriamo la Interrupt Routing Table (IRT)
     for (int i = 0; i < IRT_NUM_ENTRY; i++) {
         memaddr *irt_entry = (memaddr *)(IRT_START + (i * sizeof(memaddr)));
-        *irt_entry = IRT_RP_BIT_ON | ((1 << NCPU) - 1); 
+        *irt_entry = IRT_RP_BIT_ON | ((1 << NCPU) - 1);
     }
 
     // Impostiamo la Task Priority Register (TPR) per ogni CPU
@@ -125,17 +109,17 @@ void interruptRouting(){
 
 int main(){
     initializePassUpVector();
+    initPcbs();
+    initASL();
     initializeVariables();
 
-    initPcbs();
+
     instantiateProcess();
-    initASL();
-    
 
     LDIT(PSECOND * (*((memaddr *)TIMESCALEADDR)));
 
 
-    for (int i = 0; i < NCPU; i++) {
+    for (int i = 0; i < NCPU-1; i++) {
         currentProcess[i] = allocPcb();
         currentProcess[i]->p_s.status = MSTATUS_MPP_M;
         currentProcess[i]->p_s.pc_epc = (memaddr) scheduler;
@@ -143,14 +127,12 @@ int main(){
             currentProcess[i]->p_s.reg_sp=0x20020000 + (i * PAGESIZE);
         }
         currentProcess[i]->p_s.mie = 0;
-        currentProcess[i]->p_parent = NULL;
-        currentProcess[i]->p_child.next = NULL;
+/*      COMMENTATO PERCHE' QUANDO FACCIO ALLOCPCB IMPOSTO GIA' TUTTO A NULL
+ *      currentProcess[i]->p_child.next = NULL;
         currentProcess[i]->p_child.prev = NULL;
         currentProcess[i]->p_sib.next = NULL;
         currentProcess[i]->p_sib.prev = NULL;
-        currentProcess[i]->p_time = 0;
-        currentProcess[i]->p_semAdd = NULL;
-        currentProcess[i]->p_supportStruct = NULL;
+  */
     }
 
     scheduler();

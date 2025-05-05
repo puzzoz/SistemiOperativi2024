@@ -295,7 +295,7 @@ void test() {
 
     /* now for a more rigorous check of process termination */
     for (p8inc = 0; p8inc < 4; p8inc++) {
-        /* Reset semaphores */ 
+        /* Reset semaphores */
         sem_blkp8 = 0;
         sem_endp8 = 0;
         for (int i = 0; i < NOLEAVES; i++) {
