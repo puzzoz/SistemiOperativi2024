@@ -127,12 +127,6 @@ int main(){
             currentProcess[i]->p_s.reg_sp=0x20020000 + (i * PAGESIZE);
         }
         currentProcess[i]->p_s.mie = 0;
-/*      COMMENTATO PERCHE' QUANDO FACCIO ALLOCPCB IMPOSTO GIA' TUTTO A NULL
- *      currentProcess[i]->p_child.next = NULL;
-        currentProcess[i]->p_child.prev = NULL;
-        currentProcess[i]->p_sib.next = NULL;
-        currentProcess[i]->p_sib.prev = NULL;
-  */
     }
 
     scheduler();
