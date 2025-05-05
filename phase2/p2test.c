@@ -17,6 +17,7 @@
 
 #include "../headers/const.h"
 #include "../headers/types.h"
+#include "../phase1/headers/pcb.h"
 #include <uriscv/liburiscv.h>
 
 typedef unsigned int devregtr;

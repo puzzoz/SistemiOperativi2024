@@ -163,10 +163,10 @@ void syscallExcHandler() {
                 case TERMPROCESS:
                     termProcess(); break;
                 case PASSEREN:
-                    if (passeren(((int *) excState->reg_a1), excState)) scheduler();
+                    if (passeren((int *) excState->reg_a1, excState)) scheduler();
                     break;
                 case VERHOGEN:
-                    if (verhogen(((int *) excState->reg_a1), excState)) scheduler();
+                    if (verhogen((int *) excState->reg_a1, excState)) scheduler();
                     break;
                 case DOIO:
                     doio(excState); break;
@@ -181,6 +181,8 @@ void syscallExcHandler() {
                 default:
                     break;
             }
+            excState->pc_epc += 4;
+            LDST(excState);
         } else {
             // attempting negative SYSCALL in user mode
             excState->cause = PRIVINSTR;
