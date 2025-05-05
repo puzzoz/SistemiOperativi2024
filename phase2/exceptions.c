@@ -11,6 +11,7 @@
 
 void blockPcb(int *sem_key, pcb_t *pcb, state_t *excState) {
     if (!insertBlocked(sem_key, pcb)) {
+        outProcQ(ready_queue(), pcb);
         softBlockCount++;
         //Aggiorno il tempo Utilizzato
         cpu_t now;
