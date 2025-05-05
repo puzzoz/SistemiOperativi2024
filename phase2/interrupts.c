@@ -131,7 +131,6 @@ void handleDeviceInterrupt(int excCode, state_t *exception_state) {
             int* sem = device_semaphores(sem_index);
             pcb_t *unblocked = removeBlocked(sem);
             if (unblocked != NULL) {
-                insertProcQ(ready_queue(), unblocked);
                 softBlockCount--;
                 *sem = 0;
             }
