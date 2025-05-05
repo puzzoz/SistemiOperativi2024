@@ -12,6 +12,13 @@ void setTPR(unsigned int value) {
     *((volatile unsigned int *)TPR) = value;
 }
 
+void updateProcessCPUTime() {
+    cpu_t now;
+    STCK(now);
+    (*current_process())->p_time += (now - sliceStart);
+}
+
+
 //risolvere problema softBlockCount
 
 volatile cpu_t sliceStart;

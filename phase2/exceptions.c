@@ -14,9 +14,7 @@ void blockPcb(int *sem_key, pcb_t *pcb, state_t *excState) {
         outProcQ(ready_queue(), pcb);
         softBlockCount++;
         //Aggiorno il tempo Utilizzato
-        cpu_t now;
-        STCK(now);
-        pcb->p_time += now - sliceStart;
+        updateProcessCPUTime();
         //Salvo il contesto nel pcb e incremento il PC
         excState->pc_epc += 4;
         pcb->p_s = *excState;
@@ -132,7 +130,9 @@ void doio(state_t *excState) {
 }
 void getTime(state_t *excState) {
     MUTEX_GLOBAL(
-        excState->reg_a0 = (*current_process())->p_time
+            cpu_t now;
+            STCK(now);
+            excState->reg_a0 = (*current_process())->p_time + (now - sliceStart);
     )
 }
 void clockWait(state_t *excState) {

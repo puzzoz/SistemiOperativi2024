@@ -28,7 +28,7 @@ static void handlePseudoClockInterrupt(state_t *exception_state) {
         int *pseudoClockSem = device_semaphores(PSEUDO_CLOCK_SEM);
         pcb_t *unblocked;
         while ((unblocked = removeBlocked(pseudoClockSem)) != NULL) {
-            insertProcQ(ready_queue(), unblocked);
+            if (headBlocked(pseudoClockSem) != NULL) insertProcQ(ready_queue(), unblocked);
             softBlockCount--;
         }
         unblocked = *current_process();
@@ -45,13 +45,11 @@ static void handlePseudoClockInterrupt(state_t *exception_state) {
 // Interrupt del PLT: fine time slice per il processo corrente
 static void handlePLTInterrupt(state_t *exception_state) {
     setTIMER(-1); // ACK del PLT
-    updateCPUtime(*current_process());
-    saveState(&((*current_process())->p_s), exception_state);
-
-    ACQUIRE_LOCK(global_lock());
-    insertProcQ(ready_queue(), *current_process()); // rimettilo in ready
-    RELEASE_LOCK(global_lock());
-
+    MUTEX_GLOBAL(
+            updateProcessCPUTime();
+            saveState(&((*current_process())->p_s), exception_state);
+            insertProcQ(ready_queue(), *current_process()); // rimettilo in ready
+            )
     scheduler();
 }
 

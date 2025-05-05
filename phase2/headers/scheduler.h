@@ -10,6 +10,8 @@
 void setTPR(unsigned int value);
 void scheduler(void);
 
+void updateProcessCPUTime();
+
 //variabile globale
 extern volatile cpu_t sliceStart;
 
