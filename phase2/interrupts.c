@@ -24,16 +24,17 @@ void saveState(state_t *dest, state_t *src) {
 
 // Interrupt del clock di sistema (ogni 100ms): sblocca i processi in wait clock
 static void handlePseudoClockInterrupt(state_t *exception_state) {
+    LDIT(PSECOND);
     MUTEX_GLOBAL(
         int *pseudoClockSem = device_semaphores(PSEUDO_CLOCK_SEM);
         pcb_t *unblocked;
         while ((unblocked = removeBlocked(pseudoClockSem)) != NULL) {
-            if (headBlocked(pseudoClockSem) != NULL) insertProcQ(ready_queue(), unblocked);
+            //if (headBlocked(pseudoClockSem) != NULL)
+                insertProcQ(ready_queue(), unblocked);
             softBlockCount--;
         }
         unblocked = *current_process();
     )
-    LDIT(PSECOND);
     if (unblocked != NULL) {
         LDST(exception_state);
     } else {
