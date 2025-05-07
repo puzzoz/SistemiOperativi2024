@@ -85,11 +85,9 @@ void createProcess(state_t *excState) {
     new_p->p_supportStruct = (support_t *) excState->reg_a3;
     excState->reg_a0 = new_p->p_pid;
 }
-void termProcess() {
-    MUTEX_GLOBAL(
-        freePcb(*current_process());
-        (*process_count())--;
-    )
+void termProcess(state_t * excState) {
+    MUTEX_GLOBAL(removePcb(excState->reg_a1 != 0 ? (pcb_t *) excState->reg_a1 : *current_process()))
+    scheduler();
 }
 unsigned int passeren(int *sem, state_t *excState) {
     unsigned int blocked = 0;
@@ -154,15 +152,14 @@ void getProcessId(state_t *excState) {
 
 void syscallExcHandler() {
     state_t* excState = GET_EXCEPTION_STATE_PTR(getPRID());
-    int syscall = excState->reg_a0; // non salvare il valore del registro in una variabile causa comportamenti inaspettati
-    if (syscall <= 0) {
+    if (((int)excState->reg_a0) <= 0) {
         // negative SYSCALL
         if (EXCEPTION_IN_KERNEL_MODE(excState)) {
-            switch (syscall) {
+            switch (((int)excState->reg_a0)) {
                 case CREATEPROCESS:
                     createProcess(excState); break;
                 case TERMPROCESS:
-                    termProcess(); break;
+                    termProcess(excState); break;
                 case PASSEREN:
                     if (passeren((int *) excState->reg_a1, excState)) scheduler();
                     break;

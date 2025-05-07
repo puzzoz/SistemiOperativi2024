@@ -29,8 +29,7 @@ static void handlePseudoClockInterrupt(state_t *exception_state) {
         int *pseudoClockSem = device_semaphores(PSEUDO_CLOCK_SEM);
         pcb_t *unblocked;
         while ((unblocked = removeBlocked(pseudoClockSem)) != NULL) {
-            //if (headBlocked(pseudoClockSem) != NULL)
-                insertProcQ(ready_queue(), unblocked);
+            if (headBlocked(pseudoClockSem) != NULL) insertProcQ(ready_queue(), unblocked);
             softBlockCount--;
         }
         unblocked = *current_process();
