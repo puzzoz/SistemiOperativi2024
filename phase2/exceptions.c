@@ -74,7 +74,6 @@ void createProcess(state_t *excState) {
             excState->reg_a0 = -1;
         } else {
             // aggiunge il nuovo processo all'albero dei processi
-            insertProcQ(&curr_p->p_list, new_p);
             insertChild(curr_p, new_p);
             // aggiunge il processo alla ready queue
             insertProcQ(ready_queue(), new_p);
@@ -177,7 +176,7 @@ void syscallExcHandler() {
                 case GETPROCESSID:
                     getProcessId(excState); break;
                 default:
-                    break;
+                    programTrapExcHandler(); break;
             }
             excState->pc_epc += 4;
             LDST(excState);
