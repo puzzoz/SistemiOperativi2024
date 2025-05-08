@@ -10,17 +10,6 @@
 
 #define DEVREGADDR(line, no) (RAMBASEADDR + 0x54 + ((line - 3) * DEVREGSIZE * DEVPERINT) + (no * DEVREGSIZE))
 
-// Aggiorna il tempo CPU del processo attuale
-void updateCPUtime(pcb_t* p) {
-    cpu_t now;
-    STCK(now);
-    p->p_time += now - sliceStart;
-}
-
-// Copia lo stato processore dal contesto salvato al PCB
-void saveState(state_t *dest, state_t *src) {
-    *dest = *src;
-}
 
 // Interrupt del clock di sistema (ogni 100ms): sblocca i processi in wait clock
 static void handlePseudoClockInterrupt(state_t *exception_state) {
@@ -29,7 +18,8 @@ static void handlePseudoClockInterrupt(state_t *exception_state) {
         int *pseudoClockSem = device_semaphores(PSEUDO_CLOCK_SEM);
         pcb_t *unblocked;
         while ((unblocked = removeBlocked(pseudoClockSem)) != NULL) {
-            if (headBlocked(pseudoClockSem) != NULL) insertProcQ(ready_queue(), unblocked);
+            if (headBlocked(pseudoClockSem) != NULL)
+                insertProcQ(ready_queue(), unblocked);
             softBlockCount--;
         }
         unblocked = *current_process();
@@ -47,7 +37,8 @@ static void handlePLTInterrupt(state_t *exception_state) {
     setTIMER(-1); // ACK del PLT
     MUTEX_GLOBAL(
             updateProcessCPUTime();
-            saveState(&((*current_process())->p_s), exception_state);
+            // Copia lo stato processore dal contesto salvato al PCB
+            (*current_process())->p_s = *exception_state;
             insertProcQ(ready_queue(), *current_process()); // rimettilo in ready
             )
     scheduler();
