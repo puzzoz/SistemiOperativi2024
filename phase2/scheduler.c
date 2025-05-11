@@ -20,11 +20,9 @@ void updateProcessCPUTime() {
     (*current_process())->p_time += (now - sliceStart);
 }
 
-
-
 void scheduler() {
     MUTEX_GLOBAL(
-            pcb_t *next = emptyProcQ(ready_queue());
+             int next = emptyProcQ(ready_queue());
     )
     if (next) {        //ready queue vuota
         if (*process_count() == 0) {      //0 processi attivi --> termina
