@@ -123,7 +123,6 @@ void handleDeviceInterrupt(int excCode, state_t *exception_state) {
                 softBlockCount--;
                 *sem = 0;
             }
-            unblocked = *current_process();
     )
 
     if (unblocked != NULL) {
