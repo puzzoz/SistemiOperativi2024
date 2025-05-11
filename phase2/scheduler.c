@@ -12,6 +12,8 @@ void setTPR(unsigned int value) {
     *((volatile unsigned int *)TPR) = value;
 }
 
+volatile cpu_t sliceStart;
+
 void updateProcessCPUTime() {
     cpu_t now;
     STCK(now);
@@ -19,53 +21,40 @@ void updateProcessCPUTime() {
 }
 
 
-//risolvere problema softBlockCount
-
-volatile cpu_t sliceStart;
 
 void scheduler() {
-    ACQUIRE_LOCK(global_lock()); //prende il GL prima di accedere alla ready queue
-
-    if (emptyProcQ(ready_queue())) {
-        //ready queue vuota --> rilascia il lock e poi prosegue
-        RELEASE_LOCK(global_lock());
-        if (*process_count() == 0) {
-            //0 processi attivi --> termina
+    MUTEX_GLOBAL(
+            pcb_t *next = emptyProcQ(ready_queue());
+    )
+    if (next) {        //ready queue vuota
+        if (*process_count() == 0) {      //0 processi attivi --> termina
             HALT();
         } else {
-            if (softBlockCount > 0) {
-                //ci sono processi bloccati --> attesa di interrupt
+            if (softBlockCount > 0) {      //ci sono processi bloccati --> attesa di interrupt
                 //CPU in WAIT --> TPR a 1
                 setTPR(1);
-    
                 //attivazione interrupt e disattivazione PLT
                 setMIE(MIE_ALL & ~MIE_MTIE_MASK);
-                unsigned int prevStatus = getSTATUS();
-                prevStatus |= MSTATUS_MIE_MASK;
-                setSTATUS(prevStatus);
-    
+                unsigned int status = getSTATUS();
+                status |= MSTATUS_MIE_MASK;
+                setSTATUS(status);
                 //valore timer al max per non causare un interrupt
                 setTIMER(MUSEC_TO_TICKS(MAXPLT));
-    
                 WAIT();
-    
                 //ripristina status e TPR a 0
-                setSTATUS(prevStatus);
                 setTPR(0);
             } else {
                 //processi attivi ma nessuno in soft block --> DEADLOCk
                 PANIC();
             }
         }
-    } else {
-        //ready queue non vuota --> primo pcb rimosso e assegnazione a currentProcess --> global lock rilasciato
-        *current_process() = removeProcQ(ready_queue());
-        RELEASE_LOCK(global_lock());
+    } else {        //ready queue non vuota
+        // primo pcb rimosso e assegnazione a currentProcess
+        MUTEX_GLOBAL(
+                *current_process() = removeProcQ(ready_queue());
+        )
     }
-
-    setTIMER(MUSEC_TO_TICKS(TIMESLICE)); //PLT per times lice a 5ms
-
-    STCK(sliceStart); //
-
+    setTIMER(MUSEC_TO_TICKS(TIMESLICE)); //PLT per time slice a 5ms
     LDST(&((*current_process())->p_s)); //stato del processore caricato dal pcb corrente
+    STCK(sliceStart);
 }
