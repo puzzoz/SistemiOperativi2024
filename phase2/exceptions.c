@@ -41,20 +41,22 @@ void removePcb(pcb_t* pcb) { // NOLINT(*-no-recursion)
     freePcb(pcb);
 }
 
-void passUpOrDie(unsigned int excIndex) { MUTEX_GLOBAL(
-    pcb_t *curr_p = *current_process();
-    context_t passUpContext;
-    unsigned int dead = 0;
-    if (curr_p->p_supportStruct != NULL) {
-        // Pass Up
-        state_t* excState = GET_EXCEPTION_STATE_PTR(getPRID());
-        curr_p->p_supportStruct->sup_exceptState[excIndex] = *excState;
-        passUpContext = curr_p->p_supportStruct->sup_exceptContext[excIndex];
-    } else {
-        // Die
-        removePcb(curr_p);
-        dead = 1; // non esegue LDCXT
-    })
+void passUpOrDie(unsigned int excIndex) {
+    MUTEX_GLOBAL(
+        pcb_t *curr_p = *current_process();
+        context_t passUpContext;
+        unsigned int dead = 0;
+        if (curr_p->p_supportStruct != NULL) {
+            // Pass Up
+            state_t* excState = GET_EXCEPTION_STATE_PTR(getPRID());
+            curr_p->p_supportStruct->sup_exceptState[excIndex] = *excState;
+            passUpContext = curr_p->p_supportStruct->sup_exceptContext[excIndex];
+        } else {
+            // Die
+            removePcb(curr_p);
+            dead = 1; // non esegue LDCXT
+        }
+    )
     if (!dead) {
         LDCXT(passUpContext.stackPtr, passUpContext.status, passUpContext.pc);
     } else {
@@ -64,7 +66,11 @@ void passUpOrDie(unsigned int excIndex) { MUTEX_GLOBAL(
 
 void interruptExcHandler() { dispatchInterrupt(getCAUSE(), GET_EXCEPTION_STATE_PTR(getPRID())); }
 
-void programTrapExcHandler() { passUpOrDie(GENERALEXCEPT); }
+void programTrapExcHandler() {
+    // rilascia il lock nel caso l'eccezione sia stata lanciata in un contesto di mutua esclusione
+    RELEASE_LOCK(global_lock());
+    passUpOrDie(GENERALEXCEPT);
+}
 
 void createProcess(state_t *excState) {
     MUTEX_GLOBAL(
@@ -191,7 +197,11 @@ void syscallExcHandler() {
     }
 }
 
-void tlbExcHandler() { passUpOrDie(PGFAULTEXCEPT); }
+void tlbExcHandler() {
+    // rilascia il lock nel caso l'eccezione sia stata lanciata in un contesto di mutua esclusione
+    RELEASE_LOCK(global_lock());
+    passUpOrDie(PGFAULTEXCEPT);
+}
 
 void exceptionHandler() {
     unsigned int cause = getCAUSE();
