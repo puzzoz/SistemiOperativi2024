@@ -7,15 +7,23 @@
 #include <uriscv/cpu.h>
 #define EXCEPTION_IN_KERNEL_MODE(excStatus) (excStatus->status & MSTATUS_MPP_MASK)
 #define CAUSE_GET_EXCCODE(x) ((x)&CAUSE_EXCCODE_MASK)
+#define CURR_EXCEPTION_STATE GET_EXCEPTION_STATE_PTR(getPRID())
 
-
-void blockPcb(int *sem_key, pcb_t *pcb, state_t *excState) {
+/*
+ * Blocca un pcb nel semaforo con chiave in sem_key, e
+ * aggiorna lo stato in excState da caricare con LDST
+ * in seguito all'esecuzione dell'exception
+ *
+ * Da chiamare in un contesto di mutua esclusione
+ */
+void blockPcb(int *sem_key, pcb_t *pcb) {
     if (!insertBlocked(sem_key, pcb)) {
         outProcQ(ready_queue(), pcb);
         softBlockCount++;
         //Aggiorno il tempo Utilizzato
         updateProcessCPUTime();
         //Salvo il contesto nel pcb e incremento il PC
+        state_t *excState = CURR_EXCEPTION_STATE;
         excState->pc_epc += 4;
         pcb->p_s = *excState;
     }
@@ -48,7 +56,7 @@ void passUpOrDie(unsigned int excIndex) {
         unsigned int dead = 0;
         if (curr_p->p_supportStruct != NULL) {
             // Pass Up
-            state_t* excState = GET_EXCEPTION_STATE_PTR(getPRID());
+            state_t* excState = CURR_EXCEPTION_STATE;
             curr_p->p_supportStruct->sup_exceptState[excIndex] = *excState;
             passUpContext = curr_p->p_supportStruct->sup_exceptContext[excIndex];
         } else {
@@ -72,7 +80,8 @@ void programTrapExcHandler() {
     passUpOrDie(GENERALEXCEPT);
 }
 
-void createProcess(state_t *excState) {
+void createProcess() {
+    state_t *excState = CURR_EXCEPTION_STATE;
     MUTEX_GLOBAL(
         pcb_t *curr_p = *current_process();
         pcb_t *new_p = allocPcb();
@@ -90,15 +99,16 @@ void createProcess(state_t *excState) {
     new_p->p_supportStruct = (support_t *) excState->reg_a3;
     excState->reg_a0 = new_p->p_pid;
 }
-void termProcess(state_t * excState) {
+void termProcess() {
+    state_t *excState = CURR_EXCEPTION_STATE;
     MUTEX_GLOBAL(removePcb(excState->reg_a1 != 0 ? (pcb_t *) excState->reg_a1 : *current_process()))
     scheduler();
 }
-unsigned int passeren(int *sem, state_t *excState) {
+unsigned int passeren(int *sem) {
     unsigned int blocked = 0;
     MUTEX_GLOBAL(
         if (*sem <= 0) {
-            blockPcb(sem, *current_process(), excState);
+            blockPcb(sem, *current_process());
             blocked = 1;
         } else if (headBlocked(sem) != NULL) {
             // il semaforo blocca un processo
@@ -110,11 +120,11 @@ unsigned int passeren(int *sem, state_t *excState) {
     )
     return blocked;
 }
-unsigned int verhogen(int *sem, state_t *excState) {
+unsigned int verhogen(int *sem) {
     unsigned int blocked = 0;
     MUTEX_GLOBAL(
         if (*sem >= 1) {
-            blockPcb(sem, *current_process(), excState);
+            blockPcb(sem, *current_process());
             blocked = 1;
         } else if (headBlocked(sem) != NULL) {
             insertProcQ(ready_queue(), removeBlocked(sem));
@@ -125,28 +135,30 @@ unsigned int verhogen(int *sem, state_t *excState) {
     )
     return blocked;
 }
-void doio(state_t *excState) {
+void doio() {
+    state_t *excState = CURR_EXCEPTION_STATE;
     unsigned int *commandAddr = (unsigned int *) excState->reg_a1;
-    unsigned int blocked = passeren(device_semaphores(DEV_NO_BY_DEV_ADDR(commandAddr - offsetof(dtpreg_t, command))), excState);
+    unsigned int blocked = passeren(device_semaphores(DEV_NO_BY_DEV_ADDR(commandAddr - offsetof(dtpreg_t, command))));
     *commandAddr = excState->reg_a2;
     if (blocked) scheduler();
 }
-void getTime(state_t *excState) {
+void getTime() {
     MUTEX_GLOBAL(
             cpu_t now;
             STCK(now);
-            excState->reg_a0 = (*current_process())->p_time + (now - sliceStart);
+            CURR_EXCEPTION_STATE->reg_a0 = (*current_process())->p_time + (now - sliceStart);
     )
 }
-void clockWait(state_t *excState) {
-    if (passeren(device_semaphores(PSEUDO_CLOCK_SEM), excState)) scheduler();
+void clockWait() {
+    if (passeren(device_semaphores(PSEUDO_CLOCK_SEM))) scheduler();
 }
-void getSupportPointer(state_t *excState) {
+void getSupportPointer() {
     MUTEX_GLOBAL(
-        excState->reg_a0 = (unsigned int) (*current_process())->p_supportStruct
+        CURR_EXCEPTION_STATE->reg_a0 = (unsigned int) (*current_process())->p_supportStruct
     )
 }
-void getProcessId(state_t *excState) {
+void getProcessId() {
+    state_t *excState = CURR_EXCEPTION_STATE;
     MUTEX_GLOBAL(
         pcb_t *curr_pr = *current_process();
         excState->reg_a0 = (excState->reg_a1 == 0) ?
@@ -155,35 +167,44 @@ void getProcessId(state_t *excState) {
     )
 }
 
+/*
+ * Esegue una SYSCALL in base al valore contenuto nel registro a0
+ * dell'exception state salvato dal processo corrente.
+ *
+ * Se il codice della SYSCALL è positivo viene eseguita una Pass Up
+ * Or Die, se invece il codice è negativo ma il processo che sta
+ * tentando la SYSCALL è in User Mode viene lanciata una Program Trap.
+ */
 void syscallExcHandler() {
-    state_t* excState = GET_EXCEPTION_STATE_PTR(getPRID());
+    state_t* excState = CURR_EXCEPTION_STATE;
     if (((int)excState->reg_a0) <= 0) {
         // negative SYSCALL
         if (EXCEPTION_IN_KERNEL_MODE(excState)) {
-            switch (((int)excState->reg_a0)) {
+            switch ((int) excState->reg_a0) {
                 case CREATEPROCESS:
-                    createProcess(excState); break;
+                    createProcess(); break;
                 case TERMPROCESS:
-                    termProcess(excState); break;
+                    termProcess(); break;
                 case PASSEREN:
-                    if (passeren((int *) excState->reg_a1, excState)) scheduler();
+                    if (passeren((int *) excState->reg_a1)) scheduler();
                     break;
                 case VERHOGEN:
-                    if (verhogen((int *) excState->reg_a1, excState)) scheduler();
+                    if (verhogen((int *) excState->reg_a1)) scheduler();
                     break;
                 case DOIO:
-                    doio(excState); break;
+                    doio(); break;
                 case GETTIME:
-                    getTime(excState); break;
+                    getTime(); break;
                 case CLOCKWAIT:
-                    clockWait(excState); break;
+                    clockWait(); break;
                 case GETSUPPORTPTR:
-                    getSupportPointer(excState); break;
+                    getSupportPointer(); break;
                 case GETPROCESSID:
-                    getProcessId(excState); break;
+                    getProcessId(); break;
                 default:
                     programTrapExcHandler(); break;
             }
+            // return from NSYS, increase PC and load the state
             excState->pc_epc += 4;
             LDST(excState);
         } else {
