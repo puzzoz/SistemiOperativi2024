@@ -23,11 +23,4 @@ int *device_semaphores(unsigned int devNo); // 2 semafori per ogni subdevice
 //queue dei PCB in READY state
 extern list_head readyQueue;
 
-
-//funzione Placeholder per uTLB_RefillHandler
-extern void uTLB_RefillHandler(void);
-
-//livello 3 exception handler nucleo
-extern void exceptionHandler(void);
-
 #endif
