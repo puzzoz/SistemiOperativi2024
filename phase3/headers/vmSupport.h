@@ -1,0 +1,6 @@
+#ifndef MULTIPANDOS_VMSUPPORT_H
+#define MULTIPANDOS_VMSUPPORT_H
+
+
+
+#endif

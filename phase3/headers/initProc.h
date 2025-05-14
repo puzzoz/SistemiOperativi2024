@@ -1,0 +1,6 @@
+#ifndef MULTIPANDOS_INITPROC_H
+#define MULTIPANDOS_INITPROC_H
+
+
+
+#endif

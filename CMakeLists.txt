@@ -16,14 +16,21 @@ add_compile_options(-ffreestanding -static -nostartfiles -nostdlib -I${URISCV_IN
 set(CMAKE_EXE_LINKER_FLAGS "-G 0 -nostdlib -T ${URISCV_SRC}/uriscvcore.ldscript -march=rv32imfd -melf32lriscv")
 
 set(PHASE_1_SOURCES phase1/pcb.c phase1/asl.c)
-set(PHASE_2_SOURCES phase2/exceptions.c phase2/interrupts.c phase2/scheduler.c phase2/initial.c phase2/p2test.c)
+set(PHASE_2_SOURCES phase2/exceptions.c phase2/interrupts.c phase2/scheduler.c phase2/initial.c)
+set(PHASE_£_SOURCES phase3/initProc.c phase3/sysSupport.c phase3/vmSupport.c)
 
-if (PHASE_1)
-	set(PHASE_1_SOURCES ${PHASE_1_SOURCES} phase1/p1test.c)
-	set(PHASE_2_SOURCES "")
+if (PHASE)
+	if (PHASE EQUAL 1)
+		set(PHASE_1_SOURCES ${PHASE_1_SOURCES} phase1/p1test.c)
+		set(PHASE_2_SOURCES "")
+		set(PHASE_3_SOURCES "")
+	elseif (PHASE EQUAL 2)
+		set(PHASE_2_SOURCES ${PHASE_2_SOURCES} phase2/p2test.c)
+		set(PHASE_3_SOURCES "")
+	endif ()
 endif ()
 
-add_executable(MultiPandOS ${PHASE_1_SOURCES} ${PHASE_2_SOURCES} ${URISCV_SRC}/crtso.S ${URISCV_SRC}/liburiscv.S)
+add_executable(MultiPandOS ${PHASE_1_SOURCES} ${PHASE_2_SOURCES} ${PHASE_3_SOURCES} ${URISCV_SRC}/crtso.S ${URISCV_SRC}/liburiscv.S)
 
 add_custom_target(
 	MultiPandOSuRISCV ALL
