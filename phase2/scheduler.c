@@ -22,11 +22,11 @@ void updateProcessCPUTime() {
 
 void scheduler() {
     MUTEX_GLOBAL(
-            *current_process() = removeProcQ(ready_queue());
-            int next = emptyProcQ(ready_queue());
+            *current_process() = removeProcQ(&readyQueue);
+            int next = emptyProcQ(&readyQueue);
     )
     if (next) { //se la ready queue e' vuota
-        if (*process_count() == 0) {      //0 processi attivi --> termina
+        if (processCount == 0) {      //0 processi attivi --> termina
             HALT();
         } else {
             //ci sono processi bloccati --> attesa di interrupt

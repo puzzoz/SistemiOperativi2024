@@ -21,7 +21,7 @@ static void handlePseudoClockInterrupt(state_t *exception_state) {
         pcb_t *unblocked;
             // Rimuove e sblocca tutti i processi in attesa del clock
         while ((unblocked = removeBlocked(pseudoClockSem)) != NULL) {
-            insertProcQ(ready_queue(), unblocked); // Li rimette nella ready queue
+            insertProcQ(&readyQueue, unblocked); // Li rimette nella ready queue
             softBlockCount--; // Decrementa il conteggio dei processi bloccati su device
         }
         unblocked = *current_process(); // Verifica se c'è un processo attivo
@@ -41,7 +41,7 @@ static void handlePLTInterrupt(state_t *exception_state) {
     MUTEX_GLOBAL(
             updateProcessCPUTime();// Aggiorna il tempo CPU del processo interrotto
             (*current_process())->p_s = *exception_state;// Copia lo stato processore dal contesto salvato al PCB
-            insertProcQ(ready_queue(), *current_process());// Rimette il processo in coda ready
+            insertProcQ(&readyQueue, *current_process());// Rimette il processo in coda ready
             )
     scheduler();// Chiamata allo scheduler per selezionare un nuovo processo
 }
@@ -54,7 +54,7 @@ static int getDeviceIndex(int line, int dev_no) {
 
 // Interrupt da device: trova chi ha fatto interrupt, fa ACK e sblocca il processo
 void handleDeviceInterrupt(int excCode, state_t *exception_state) {
-    int line = -1;
+    int line;
     // Mappa codice d'interrupt a linea di interrupt
     switch (excCode) {
         case IL_DISK:     line = 3; break;
@@ -129,7 +129,7 @@ void handleDeviceInterrupt(int excCode, state_t *exception_state) {
             int* sem = device_semaphores(sem_index);
             pcb_t *unblocked = removeBlocked(sem); // Sblocca un eventuale processo
             if (unblocked != NULL) {
-                insertProcQ(ready_queue(), unblocked); // Lo rimette nella ready queue
+                insertProcQ(&readyQueue, unblocked); // Lo rimette nella ready queue
                 softBlockCount--;// Aggiorna il numero di processi in attesa di device
                 *sem = 0;// Reset del semaforo
             }

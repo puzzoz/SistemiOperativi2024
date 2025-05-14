@@ -5,7 +5,7 @@
 
 //LEVEL 3 GLOBAL VARIABLES
 
-static int processCount = 0; //num di processi iniziati ma non ancora terminati
+int processCount = 0; //num di processi iniziati ma non ancora terminati
 
 typedef unsigned int size_t;
 __attribute__((unused)) void memset(void *dest, int value, size_t n)
@@ -27,10 +27,6 @@ pcb_t *currentProcess[NCPU];
 int deviceSemaphores[DEVICE_SEMS+1]; // 2 semafori per ogni subdevice
 
 unsigned int globalLock; //puo' avere solo valore 0 e 1
-
-
-//funzione Placeholder per uTLB_RefillHandler
-extern void uTLB_RefillHandler(void);
 
 
 void initializePassUpVector() {
@@ -133,12 +129,6 @@ int main(){
     return 1;
 }
 
-int* process_count() { return &processCount; }
-
-unsigned int* global_lock() { return &globalLock; }
-
 pcb_t** current_process() { return (getPRID() < NCPU) ? &currentProcess[getPRID()] : NULL; }
-
-list_head* ready_queue() { return &readyQueue; }
 
 int *device_semaphores(unsigned int devNo) {return (devNo <= PSEUDO_CLOCK_SEM) ? &deviceSemaphores[devNo] : NULL; }

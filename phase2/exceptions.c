@@ -18,7 +18,7 @@
  */
 void blockPcb(int *sem_key, pcb_t *pcb) {
     if (!insertBlocked(sem_key, pcb)) {
-        outProcQ(ready_queue(), pcb);
+        outProcQ(&readyQueue, pcb);
         softBlockCount++;
         //Aggiorno il tempo Utilizzato
         updateProcessCPUTime();
@@ -37,11 +37,11 @@ void blockPcb(int *sem_key, pcb_t *pcb) {
 */
 void removePcb(pcb_t* pcb) { // NOLINT(*-no-recursion)
     outChild(pcb);
-    (*process_count())--;
+    processCount--;
     if (pcb->p_semAdd != NULL && outBlocked(pcb) != NULL) {
         softBlockCount--;
     }
-    outProcQ(ready_queue(), pcb);
+    outProcQ(&readyQueue, pcb);
     pcb_t *child;
     while ((child = removeChild(pcb)) != NULL) {
         removePcb(child);
@@ -76,7 +76,7 @@ void interruptExcHandler() { dispatchInterrupt(getCAUSE(), GET_EXCEPTION_STATE_P
 
 void programTrapExcHandler() {
     // rilascia il lock nel caso l'eccezione sia stata lanciata in un contesto di mutua esclusione
-    RELEASE_LOCK(global_lock());
+    RELEASE_LOCK(&globalLock);
     passUpOrDie(GENERALEXCEPT);
 }
 
@@ -91,8 +91,8 @@ void createProcess() {
             // aggiunge il nuovo processo all'albero dei processi
             insertChild(curr_p, new_p);
             // aggiunge il processo alla ready queue
-            insertProcQ(ready_queue(), new_p);
-            (*process_count())++;
+            insertProcQ(&readyQueue, new_p);
+            processCount++;
         }
     )
     new_p->p_s = *((state_t *) excState->reg_a1);
@@ -112,7 +112,7 @@ unsigned int passeren(int *sem) {
             blocked = 1;
         } else if (headBlocked(sem) != NULL) {
             // il semaforo blocca un processo
-            insertProcQ(ready_queue(), removeBlocked(sem));
+            insertProcQ(&readyQueue, removeBlocked(sem));
             softBlockCount--;
         } else {
             *sem = 0;
@@ -127,7 +127,7 @@ unsigned int verhogen(int *sem) {
             blockPcb(sem, *current_process());
             blocked = 1;
         } else if (headBlocked(sem) != NULL) {
-            insertProcQ(ready_queue(), removeBlocked(sem));
+            insertProcQ(&readyQueue, removeBlocked(sem));
             softBlockCount--;
         } else {
             *sem = 1;
@@ -220,7 +220,7 @@ void syscallExcHandler() {
 
 void tlbExcHandler() {
     // rilascia il lock nel caso l'eccezione sia stata lanciata in un contesto di mutua esclusione
-    RELEASE_LOCK(global_lock());
+    RELEASE_LOCK(&globalLock);
     passUpOrDie(PGFAULTEXCEPT);
 }
 
