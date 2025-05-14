@@ -2,4 +2,4 @@
 /.vscode
 /cmake-build-debug
 /build
-*.uriscv
+**.uriscv
