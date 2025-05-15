@@ -16,8 +16,8 @@
 /*
  * utilities per i breakpoint
  */
-void bp(); // una chiamata a questa funzione definisce un breakpoint (da configurare su uriscv)
-#define BP bp(); // ridefinizione più concisa di un breakpoint
+void *bp(void *arg);// una chiamata a questa funzione definisce un breakpoint (da configurare su uriscv)
+#define BP bp(NULL); // ridefinizione più concisa di un breakpoint
 
 void initPcbs();
 void freePcb(pcb_t* p);
