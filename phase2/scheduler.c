@@ -21,12 +21,22 @@ void updateProcessCPUTime() {
 }
 
 void scheduler() {
-    MUTEX_GLOBAL(
-            *current_process() = removeProcQ(&readyQueue);
-            int next = emptyProcQ(&readyQueue);
-    )
-    if (next) { //se la ready queue e' vuota
+    ACQUIRE_LOCK(&globalLock);
+    if (!emptyProcQ(&readyQueue)) {
+        *current_process() = removeProcQ(&readyQueue);
+        setTPR(0);
+        setTIMER(MUSEC_TO_TICKS(TIMESLICE)); //PLT per time slice a 5ms
+        STCK(sliceStart);
+        updateProcessCPUTime();
+        RELEASE_LOCK(&globalLock);
+        LDST(&((*current_process())->p_s)); //stato del processore caricato dal pcb corrente
+    } else {
         if (processCount == 0) {      //0 processi attivi --> termina
+            unsigned int *irt_entry = (unsigned int *) IRT_START;
+            for (int i = 0; i < IRT_NUM_ENTRY; i++) {
+                *irt_entry = getPRID();
+                irt_entry++;
+            }
             HALT();
         } else {
             //ci sono processi bloccati --> attesa di interrupt
@@ -44,7 +54,4 @@ void scheduler() {
             setTPR(0);
         }
     }
-    setTIMER(MUSEC_TO_TICKS(TIMESLICE)); //PLT per time slice a 5ms
-    STCK(sliceStart);
-    LDST(&((*current_process())->p_s)); //stato del processore caricato dal pcb corrente
 }
