@@ -116,7 +116,6 @@ int main(){
         currentProcess[i] = allocPcb();
         currentProcess[i]->p_s.status = MSTATUS_MPP_M;
         currentProcess[i]->p_s.pc_epc = (memaddr)scheduler;
-        currentProcess[i]->p_s.reg_sp = 0x20020000 + (i * PAGESIZE);
         currentProcess[i]->p_s.mie = 0;
         if (i>=1){
             INITCPU(i, &(currentProcess[i]->p_s));
