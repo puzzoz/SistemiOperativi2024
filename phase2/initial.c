@@ -74,7 +74,6 @@ extern void test();
 void instantiateProcess() {
     pcb_t *newProcess = allocPcb();
 
-
     // inizializzo stato processore
     newProcess->p_s.status = MSTATUS_MPIE_MASK | MSTATUS_MPP_M; // attivo interrupts and kernel mode
     newProcess->p_s.mie = MIE_ALL; // attivo tutti gli interrupts
@@ -108,21 +107,22 @@ int main(){
     initPcbs();
     initASL();
     initializeVariables();
-
-
+    interruptRouting();
     instantiateProcess();
 
     LDIT(PSECOND * (*((memaddr *)TIMESCALEADDR)));
 
-
-    for (int i = 0; i < NCPU-1; i++) {
+    for (int i = 0; i < NCPU; i++) {
         currentProcess[i] = allocPcb();
         currentProcess[i]->p_s.status = MSTATUS_MPP_M;
-        currentProcess[i]->p_s.pc_epc = (memaddr) scheduler;
-        if(i>=1){
-            currentProcess[i]->p_s.reg_sp=0x20020000 + (i * PAGESIZE);
-        }
+        currentProcess[i]->p_s.pc_epc = (memaddr)scheduler;
+        currentProcess[i]->p_s.reg_sp = 0x20020000 + (i * PAGESIZE);
         currentProcess[i]->p_s.mie = 0;
+        if (i>=1){
+            INITCPU(i, &(currentProcess[i]->p_s));
+            currentProcess[i]->p_s.reg_sp = 0x20020000 + (i * PAGESIZE);
+        }
+
     }
 
     scheduler();
