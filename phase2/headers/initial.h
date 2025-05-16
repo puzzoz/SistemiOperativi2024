@@ -18,7 +18,9 @@ extern int processCount;
 
 pcb_t** current_process();
 
-int *device_semaphores(unsigned int devNo); // 2 semafori per ogni subdevice
+extern int deviceSemaphores[DEVICE_SEMS+1];
+
+extern int *device_semaphores(unsigned int devNo); // 2 semafori per ogni subdevice
 
 //queue dei PCB in READY state
 extern list_head readyQueue;

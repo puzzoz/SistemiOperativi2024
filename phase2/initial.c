@@ -18,6 +18,8 @@ __attribute__((unused)) void memset(void *dest, int value, size_t n)
 
 unsigned int softBlockCount;
 
+int *device_semaphores(unsigned int devNo) {return (devNo <= PSEUDO_CLOCK_SEM) ? &deviceSemaphores[devNo] : NULL; }
+
 //queue dei PCB in READY state
 list_head readyQueue;
 
@@ -87,16 +89,26 @@ void instantiateProcess() {
 void interruptRouting(){
     // configuriamo la Interrupt Routing Table (IRT)
     for (int i = 0; i < IRT_NUM_ENTRY; i++) {
-        memaddr *irt_entry = (memaddr *)(IRT_START + (i * sizeof(memaddr)));
-        *irt_entry = IRT_RP_BIT_ON | ((1 << NCPU) - 1);
-    }
+        volatile memaddr *irt_entry = (memaddr *)(IRT_START + (i * sizeof(memaddr)));
 
+        // Calcola la CPU destinataria per questa entry:
+        // - Ogni CPU gestisce un blocco di (IRT_NUM_ENTRY/NCPU) entry
+        // - Entry i viene assegnata alla CPU (i / entries_per_cpu)
+        const int entries_per_cpu = IRT_NUM_ENTRY / NCPU;
+        int target_cpu = i / entries_per_cpu;
+
+        // Imposta:
+        // - Bit RP a 1 (IRT_RP_BIT_ON)
+        // - Solo il bit della CPU target a 1 nel campo Destination
+        *irt_entry = IRT_RP_BIT_ON | (1 << target_cpu);
+    }
     // Impostiamo la Task Priority Register (TPR) per ogni CPU
-    for (int cpu_id = 0; cpu_id < NCPU; cpu_id++) {
-        if (currentProcess[cpu_id] == NULL) {
-            *((memaddr *)TPR) = 1;
+    for (int i = 0; i < NCPU; i++) {
+        volatile memaddr *cpu_tpr=(volatile memaddr *)(TPR + i * sizeof(memaddr) );
+        if (currentProcess[i] == NULL) {
+            *cpu_tpr = 1;
         } else {
-            *((memaddr *)TPR) = 0;
+            *cpu_tpr = 0;
         }
     }
 
@@ -114,6 +126,7 @@ int main(){
 
     LDIT(PSECOND * (*((memaddr *)TIMESCALEADDR)));
 
+    interruptRouting();
 
     for (int i = 0; i < NCPU-1; i++) {
         currentProcess[i] = allocPcb();
@@ -130,5 +143,3 @@ int main(){
 }
 
 pcb_t** current_process() { return (getPRID() < NCPU) ? &currentProcess[getPRID()] : NULL; }
-
-int *device_semaphores(unsigned int devNo) {return (devNo <= PSEUDO_CLOCK_SEM) ? &deviceSemaphores[devNo] : NULL; }
