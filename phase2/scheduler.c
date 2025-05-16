@@ -31,7 +31,9 @@ void scheduler() {
         RELEASE_LOCK(&globalLock);
         LDST(&((*current_process())->p_s)); //stato del processore caricato dal pcb corrente
     } else {
-        if (processCount == 0) {      //0 processi attivi --> termina
+        if (processCount == 0) {
+            RELEASE_LOCK(&globalLock);
+            //0 processi attivi --> termina
             unsigned int *irt_entry = (unsigned int *) IRT_START;
             for (int i = 0; i < IRT_NUM_ENTRY; i++) {
                 *irt_entry = getPRID();
@@ -39,6 +41,7 @@ void scheduler() {
             }
             HALT();
         } else {
+            RELEASE_LOCK(&globalLock);
             //ci sono processi bloccati --> attesa di interrupt
             //CPU in WAIT --> TPR a 1
             setTPR(1);
