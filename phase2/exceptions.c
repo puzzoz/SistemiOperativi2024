@@ -97,10 +97,10 @@ void createProcess() {
             insertProcQ(&readyQueue, new_p);
             processCount++;
         }
+        new_p->p_s = *((state_t *) excState->reg_a1);
+        new_p->p_supportStruct = (support_t *) excState->reg_a3;
+        excState->reg_a0 = new_p->p_pid;
     )
-    new_p->p_s = *((state_t *) excState->reg_a1);
-    new_p->p_supportStruct = (support_t *) excState->reg_a3;
-    excState->reg_a0 = new_p->p_pid;
 }
 void termProcess() {
     state_t *excState = CURR_EXCEPTION_STATE;
