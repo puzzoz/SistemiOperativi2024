@@ -60,7 +60,8 @@ void passUpOrDie(unsigned int excIndex) {
         if (curr_p->p_supportStruct != NULL) {
             // Pass Up
             state_t* excState = CURR_EXCEPTION_STATE;
-            curr_p->p_supportStruct->sup_exceptState[excIndex] = *excState;
+            state_t tmp = *excState;
+            curr_p->p_supportStruct->sup_exceptState[excIndex] = tmp;
             passUpContext = curr_p->p_supportStruct->sup_exceptContext[excIndex];
         } else {
             // Die

@@ -39,7 +39,7 @@ void initializePassUpVector() {
         if (cpu_id == 0) {
             passupvector->tlb_refill_stackPtr = KERNELSTACK;
         } else {
-            passupvector->tlb_refill_stackPtr = RAMSTART + ((64 + cpu_id) * PAGESIZE);
+            passupvector->tlb_refill_stackPtr = 0x20020000 + (cpu_id * PAGESIZE);
         }
         passupvector->exception_handler = (memaddr)exceptionHandler;
 
