@@ -74,6 +74,14 @@ extern void test();
 void instantiateProcess() {
     pcb_t *newProcess = allocPcb();
 
+    // inizializzo struttura PCB azzerando i campi, in questo modo evito garbage in memoria
+    newProcess->p_parent = NULL;
+    INIT_LIST_HEAD(&newProcess->p_child);
+    INIT_LIST_HEAD(&newProcess->p_sib);
+    newProcess->p_time          = 0;
+    newProcess->p_semAdd        = NULL;
+    newProcess->p_supportStruct = NULL;
+
     // inizializzo stato processore
     newProcess->p_s.status = MSTATUS_MPIE_MASK | MSTATUS_MPP_M; // attivo interrupts and kernel mode
     newProcess->p_s.mie = MIE_ALL; // attivo tutti gli interrupts
@@ -113,14 +121,20 @@ int main(){
     LDIT(PSECOND * (*((memaddr *)TIMESCALEADDR)));
 
     for (int i = 0; i < NCPU; i++) {
-        currentProcess[i] = allocPcb();
-        currentProcess[i]->p_s.status = MSTATUS_MPP_M;
-        currentProcess[i]->p_s.pc_epc = (memaddr)scheduler;
-        currentProcess[i]->p_s.mie = 0;
-        if (i>=1){
-            INITCPU(i, &(currentProcess[i]->p_s));
-            currentProcess[i]->p_s.reg_sp = 0x20020000 + (i * PAGESIZE);
+        pcb_t *p = allocPcb();
+        currentProcess[i] = p;
+        //metto in kernel‐mode con MPIE=1
+        p->p_s.status = MSTATUS_MPIE_MASK | MSTATUS_MPP_M;
+        //disabilito interrupt locali
+        p->p_s.mie    = 0;
+        p->p_s.pc_epc = (memaddr)scheduler;
+        if (i >= 1) {
+            //inizializzo passUpVector e SP per la CPU i
+            INITCPU(i, &p->p_s);
+            p->p_s.reg_sp = 0x20020000 + (i * PAGESIZE);
         }
+        //la CPU i parte subito in scheduler()
+        processCount++;
 
     }
 

@@ -19,13 +19,16 @@
 void blockPcb(int *sem_key, pcb_t *pcb) {
     if (!insertBlocked(sem_key, pcb)) {
         outProcQ(&readyQueue, pcb);
-        softBlockCount++;
-        //Aggiorno il tempo Utilizzato
+        pcb->p_semAdd = sem_key; //salvo il semaforo su cui ci si è bloccati
+        // Aggiorno il tempo Utilizzato
         updateProcessCPUTime();
         //Salvo il contesto nel pcb e incremento il PC
         state_t *excState = CURR_EXCEPTION_STATE;
-        excState->pc_epc += 4;
-        pcb->p_s = *excState;
+        state_t tmp = *excState;
+        //uso un puntatore temporaneo "indiretto" per evitare corruzione
+        tmp.pc_epc += 4;
+        pcb->p_s = tmp;
+        softBlockCount++;
     }
 }
 
@@ -205,8 +208,9 @@ void syscallExcHandler() {
                     programTrapExcHandler(); break;
             }
             // return from NSYS, increase PC and load the state
-            excState->pc_epc += 4;
-            LDST(excState);
+            state_t tmp = *excState;
+            tmp.pc_epc += 4;
+            LDST(&tmp);
         } else {
             // attempting negative SYSCALL in user mode
             excState->cause = PRIVINSTR;
