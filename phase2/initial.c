@@ -16,6 +16,10 @@ __attribute__((unused)) void memset(void *dest, int value, size_t n)
     }
 }
 
+// dichiara un array bidimensionale: per ciascuna delle NCPU CPU metto un blocco di PAGESIZE byte
+static char tlb_refill_stacks[NCPU][PAGESIZE * TLB_STACK_PAGES]
+        __attribute__((aligned(PAGESIZE)));
+
 unsigned int softBlockCount;
 
 //queue dei PCB in READY state
@@ -39,7 +43,14 @@ void initializePassUpVector() {
         if (cpu_id == 0) {
             passupvector->tlb_refill_stackPtr = KERNELSTACK;
         } else {
-            passupvector->tlb_refill_stackPtr = 0x20020000 + (cpu_id * PAGESIZE);
+            //riga delle vecchie specifiche (funziona)(sbagliata):
+            //passupvector->tlb_refill_stackPtr = 0x20020000 + (cpu_id * PAGESIZE);
+            //riga delle nuove specifiche (non funziona)(corretta):
+            //passupvector->tlb_refill_stackPtr = RAMSTART + (64 * PAGESIZE) + (cpu_id * PAGESIZE)
+            //riga per riservare memoria (funziona)(non so se corretta o no):
+            passupvector->tlb_refill_stackPtr = (memaddr)&tlb_refill_stacks[cpu_id][PAGESIZE - sizeof(unsigned int)];
+            //qui imposto il tlb_refill_stackPtr al “top” di ciascuna pagina,
+            //calcolando  l’indirizzo dell’ultimo unsigned int in fondo alla pagina di stack di quella CPU.
         }
         passupvector->exception_handler = (memaddr)exceptionHandler;
 
@@ -73,14 +84,6 @@ extern void test();
 
 void instantiateProcess() {
     pcb_t *newProcess = allocPcb();
-
-    // inizializzo struttura PCB azzerando i campi, in questo modo evito garbage in memoria
-    newProcess->p_parent = NULL;
-    INIT_LIST_HEAD(&newProcess->p_child);
-    INIT_LIST_HEAD(&newProcess->p_sib);
-    newProcess->p_time          = 0;
-    newProcess->p_semAdd        = NULL;
-    newProcess->p_supportStruct = NULL;
 
     // inizializzo stato processore
     newProcess->p_s.status = MSTATUS_MPIE_MASK | MSTATUS_MPP_M; // attivo interrupts and kernel mode
@@ -134,7 +137,6 @@ int main(){
             p->p_s.reg_sp = 0x20020000 + (i * PAGESIZE);
         }
         //la CPU i parte subito in scheduler()
-        processCount++;
 
     }
 

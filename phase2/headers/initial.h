@@ -8,6 +8,7 @@
 
 #define DEVICE_SEMS 48
 #define PSEUDO_CLOCK_SEM  DEVICE_SEMS
+#define TLB_STACK_PAGES  1
 
 #define MUTEX_GLOBAL(expr) ACQUIRE_LOCK(&globalLock); expr; RELEASE_LOCK(&globalLock);
 #define DEV_NO_BY_DEV_ADDR(devAddr) (((unsigned int)devAddr - START_DEVREG) / sizeof(devreg_t))
