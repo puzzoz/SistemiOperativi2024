@@ -16,10 +16,6 @@ __attribute__((unused)) void memset(void *dest, int value, size_t n)
     }
 }
 
-// dichiara un array bidimensionale: per ciascuna delle NCPU CPU metto un blocco di PAGESIZE byte
-static char tlb_refill_stacks[NCPU][PAGESIZE * TLB_STACK_PAGES]
-        __attribute__((aligned(PAGESIZE)));
-
 unsigned int softBlockCount;
 
 //queue dei PCB in READY state
@@ -43,14 +39,8 @@ void initializePassUpVector() {
         if (cpu_id == 0) {
             passupvector->tlb_refill_stackPtr = KERNELSTACK;
         } else {
-            //riga delle vecchie specifiche (funziona)(sbagliata):
-            //passupvector->tlb_refill_stackPtr = 0x20020000 + (cpu_id * PAGESIZE);
-            //riga delle nuove specifiche (non funziona)(corretta):
-            //passupvector->tlb_refill_stackPtr = RAMSTART + (64 * PAGESIZE) + (cpu_id * PAGESIZE)
-            //riga per riservare memoria (funziona)(non so se corretta o no):
-            passupvector->tlb_refill_stackPtr = (memaddr)&tlb_refill_stacks[cpu_id][PAGESIZE - sizeof(unsigned int)];
-            //qui imposto il tlb_refill_stackPtr al “top” di ciascuna pagina,
-            //calcolando  l’indirizzo dell’ultimo unsigned int in fondo alla pagina di stack di quella CPU.
+            //riga delle vecchie specifiche:
+            passupvector->tlb_refill_stackPtr = 0x20020000 + (cpu_id * PAGESIZE);
         }
         passupvector->exception_handler = (memaddr)exceptionHandler;
 
