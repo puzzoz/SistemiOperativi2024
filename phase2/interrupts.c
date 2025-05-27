@@ -1,11 +1,9 @@
 #include "headers/interrupts.h"
 #include <uriscv/const.h>
-#include "../headers/types.h"
 #include <uriscv/liburiscv.h>
 #include <uriscv/cpu.h>
 #include "headers/initial.h"
 #include "headers/scheduler.h"
-#include "../phase1/headers/asl.h"
 #include "../phase1/headers/asl.h"
 
 // Macro per calcolare l'indirizzo del registro di un device, data la sua linea e numero.
@@ -24,7 +22,7 @@ static void handlePseudoClockInterrupt(state_t *exception_state) {
             insertProcQ(&readyQueue, unblocked); // Li rimette nella ready queue
             softBlockCount--; // Decrementa il conteggio dei processi bloccati su device
         }
-        unblocked = *current_process(); // Verifica se c'è un processo attivo
+        unblocked = CURRENT_PROCESS; // Verifica se c'è un processo attivo
     )
     // Se c'era un processo in esecuzione, lo riprende. Altrimenti invoca lo scheduler
     if (unblocked != NULL) {
@@ -40,8 +38,8 @@ static void handlePLTInterrupt(state_t *exception_state) {
     setTIMER(-1); // ACK del PLT per segnalare che l'interrupt è stato gestito
     MUTEX_GLOBAL(
             updateProcessCPUTime();// Aggiorna il tempo CPU del processo interrotto
-            (*current_process())->p_s = *exception_state;// Copia lo stato processore dal contesto salvato al PCB
-            insertProcQ(&readyQueue, *current_process());// Rimette il processo in coda ready
+            (CURRENT_PROCESS)->p_s = *exception_state;// Copia lo stato processore dal contesto salvato al PCB
+            insertProcQ(&readyQueue, CURRENT_PROCESS);// Rimette il processo in coda ready
             )
     scheduler();// Chiamata allo scheduler per selezionare un nuovo processo
 }
@@ -162,7 +160,7 @@ void dispatchInterrupt(unsigned int cause, state_t *exception_state) {
         case IL_ETHERNET:
         case IL_PRINTER:
         case IL_TERMINAL:
-            handleDeviceInterrupt(excCode, exception_state);// Interrupt da device
+            handleDeviceInterrupt((int) excCode, exception_state);// Interrupt da device
             break;
         default:
             PANIC(); // Caso di errore: codice d'interrupt non gestito

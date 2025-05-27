@@ -8,7 +8,8 @@
 
 //funzioni
 void setTPR(unsigned int value);
-void scheduler(void);
+
+_Noreturn void scheduler(void);
 
 void updateProcessCPUTime();
 

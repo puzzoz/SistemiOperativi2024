@@ -17,17 +17,17 @@ volatile cpu_t sliceStart;
 void updateProcessCPUTime() {
     cpu_t now;
     STCK(now);
-    (*current_process())->p_time += (now - sliceStart);
+    (CURRENT_PROCESS)->p_time += (now - sliceStart);
 }
 
-void scheduler() {
+_Noreturn void scheduler() {
     while (1) {
         pcb_t *nextProc = NULL;
         MUTEX_GLOBAL(
                 nextProc = removeProcQ(&readyQueue);
         )
         if (nextProc != NULL) {
-            *current_process() = nextProc;
+            CURRENT_PROCESS = nextProc;
             setTIMER(MUSEC_TO_TICKS(TIMESLICE));
             STCK(sliceStart);
             LDST(&(nextProc->p_s));

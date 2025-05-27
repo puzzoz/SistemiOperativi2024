@@ -5,16 +5,21 @@
 #include "../phase1/headers/asl.h"
 #include <uriscv/liburiscv.h>
 #include <uriscv/cpu.h>
+
 #define EXCEPTION_IN_KERNEL_MODE(excStatus) (excStatus->status & MSTATUS_MPP_MASK)
 #define CAUSE_GET_EXCCODE(x) ((x)&CAUSE_EXCCODE_MASK)
 #define CURR_EXCEPTION_STATE GET_EXCEPTION_STATE_PTR(getPRID())
 
-/*
+/**
  * Blocca un pcb nel semaforo con chiave in sem_key, e
  * aggiorna lo stato in excState da caricare con LDST
  * in seguito all'esecuzione dell'exception
  *
  * Da chiamare in un contesto di mutua esclusione
+ *
+ * @param sem_key il puntatore alla chiave sel semaforo su cui
+ * bloccare il processo
+ * @param pcb il puntatore al processo da bloccare
  */
 void blockPcb(int *sem_key, pcb_t *pcb) {
     if (!insertBlocked(sem_key, pcb)) {
@@ -32,11 +37,13 @@ void blockPcb(int *sem_key, pcb_t *pcb) {
     }
 }
 
-/*
+/**
  * Rimuove un pcb e tutti i processi figli dalla ready queue
  * e da qualunque processo o semaforo con un riferimento ad esso.
  *
  * Da chiamare in un contesto di mutua esclusione
+ *
+ * @param pcb il puntatore al pcb da eliminare
 */
 void removePcb(pcb_t* pcb) { // NOLINT(*-no-recursion)
     outChild(pcb);
@@ -52,9 +59,18 @@ void removePcb(pcb_t* pcb) { // NOLINT(*-no-recursion)
     freePcb(pcb);
 }
 
+/**
+ * Se il processo corrente ha definito una support structure allora ne viene caricato
+ * il contesto con indice excIndex, altrimenti viene terminato e il controllo torna
+ * allo scheduler
+ *
+ * @param excIndex indice del contesto della support structure da caricare
+ * se valorizzato, può solo assumere il valore di una delle costanti PGFAULTEXCEPT e
+ * GENERALEXCEPT
+ */
 void passUpOrDie(unsigned int excIndex) {
     MUTEX_GLOBAL(
-        pcb_t *curr_p = *current_process();
+        pcb_t *curr_p = CURRENT_PROCESS;
         context_t passUpContext;
         unsigned int dead = 0;
         if (curr_p->p_supportStruct != NULL) {
@@ -87,7 +103,7 @@ void programTrapExcHandler() {
 void createProcess() {
     state_t *excState = CURR_EXCEPTION_STATE;
     MUTEX_GLOBAL(
-        pcb_t *curr_p = *current_process();
+        pcb_t *curr_p = CURRENT_PROCESS;
         pcb_t *new_p = allocPcb();
         if (new_p == NULL) {
             excState->reg_a0 = -1;
@@ -105,14 +121,21 @@ void createProcess() {
 }
 void termProcess() {
     state_t *excState = CURR_EXCEPTION_STATE;
-    MUTEX_GLOBAL(removePcb(excState->reg_a1 != 0 ? (pcb_t *) excState->reg_a1 : *current_process()))
+    MUTEX_GLOBAL(removePcb(excState->reg_a1 != 0 ? (pcb_t *) excState->reg_a1 : CURRENT_PROCESS))
     scheduler();
 }
+/**
+ * Esegue un'operazione P su un semaforo
+ * Da non chiamare assolutamente in un contesto di mutua esclusione
+ *
+ * @param sem il puntatore alla chiave del semaforo su cui eseguire l'operazione P
+ * @return 0 se il processo attuale è stato bloccato sul semaforo, 1 altrimenti
+ */
 unsigned int passeren(int *sem) {
     unsigned int blocked = 0;
     MUTEX_GLOBAL(
         if (*sem <= 0) {
-            blockPcb(sem, *current_process());
+            blockPcb(sem, CURRENT_PROCESS);
             blocked = 1;
         } else if (headBlocked(sem) != NULL) {
             // il semaforo blocca un processo
@@ -124,11 +147,18 @@ unsigned int passeren(int *sem) {
     )
     return blocked;
 }
+/**
+ * Esegue un'operazione V su un semaforo
+ * Da non chiamare assolutamente in un contesto di mutua esclusione
+ *
+ * @param sem il puntatore alla chiave del semaforo su cui eseguire l'operazione V
+ * @return 0 se il processo attuale è stato bloccato sul semaforo, 1 altrimenti
+ */
 unsigned int verhogen(int *sem) {
     unsigned int blocked = 0;
     MUTEX_GLOBAL(
         if (*sem >= 1) {
-            blockPcb(sem, *current_process());
+            blockPcb(sem, CURRENT_PROCESS);
             blocked = 1;
         } else if (headBlocked(sem) != NULL) {
             insertProcQ(&readyQueue, removeBlocked(sem));
@@ -150,7 +180,7 @@ void getTime() {
     MUTEX_GLOBAL(
             cpu_t now;
             STCK(now);
-            CURR_EXCEPTION_STATE->reg_a0 = (*current_process())->p_time + (now - sliceStart);
+            CURR_EXCEPTION_STATE->reg_a0 = (CURRENT_PROCESS)->p_time + (now - sliceStart);
     )
 }
 void clockWait() {
@@ -158,20 +188,20 @@ void clockWait() {
 }
 void getSupportPointer() {
     MUTEX_GLOBAL(
-        CURR_EXCEPTION_STATE->reg_a0 = (unsigned int) (*current_process())->p_supportStruct
+        CURR_EXCEPTION_STATE->reg_a0 = (unsigned int) (CURRENT_PROCESS)->p_supportStruct
     )
 }
 void getProcessId() {
     state_t *excState = CURR_EXCEPTION_STATE;
     MUTEX_GLOBAL(
-        pcb_t *curr_pr = *current_process();
+        pcb_t *curr_pr = CURRENT_PROCESS;
         excState->reg_a0 = (excState->reg_a1 == 0) ?
             curr_pr->p_pid
             : (curr_pr->p_parent != NULL) ? curr_pr->p_parent->p_pid : 0
     )
 }
 
-/*
+/**
  * Esegue una SYSCALL in base al valore contenuto nel registro a0
  * dell'exception state salvato dal processo corrente.
  *

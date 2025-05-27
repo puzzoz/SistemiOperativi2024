@@ -1,7 +1,6 @@
 #include "./headers/initial.h"
 #include "../phase1/headers/asl.h"
 #include "./headers/scheduler.h"
-#include "headers/initial.h"
 
 //LEVEL 3 GLOBAL VARIABLES
 
@@ -127,13 +126,8 @@ int main(){
             p->p_s.reg_sp = 0x20020000 + (i * PAGESIZE);
         }
         //la CPU i parte subito in scheduler()
-
     }
-
     scheduler();
-    return 1;
 }
-
-pcb_t** current_process() { return (getPRID() < NCPU) ? &currentProcess[getPRID()] : NULL; }
 
 int *device_semaphores(unsigned int devNo) {return (devNo <= PSEUDO_CLOCK_SEM) ? &deviceSemaphores[devNo] : NULL; }
