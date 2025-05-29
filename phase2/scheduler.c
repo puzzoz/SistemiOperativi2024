@@ -9,7 +9,7 @@
 
 //settaggio TPR
 void setTPR(unsigned int value) {
-    *((volatile unsigned int *)TPR) = value;
+    *((memaddr *)TPR) = value;
 }
 
 volatile cpu_t sliceStart;
@@ -34,7 +34,7 @@ _Noreturn void scheduler() {
         }
 
         if (processCount == 0) {
-            HALT();  // Tutti i processi sono morti
+            HALT();  //tutti i processi sono morti
         }
         // CPU in idle
         setTPR(1);
@@ -43,7 +43,7 @@ _Noreturn void scheduler() {
         status |= MSTATUS_MIE_MASK;
         setSTATUS(status);
         setTIMER(MUSEC_TO_TICKS(MAXPLT));
-        WAIT();     // Quando arriva un interrupt, riprova
+        WAIT();     //quando arriva un interrupt, riprova
         setTPR(0);
     }
 }
