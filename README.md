@@ -4,6 +4,9 @@ To compile the project:
 ```bash
 mkdir -p build && pushd build && cmake .. && make && popd
 ```
+Implementazione Inizializzazione:
+L'inizializzazione avviene all'interno della funzione main(), e ci permette di coordinare la configurazione degli elementi, per poi avviare lo scheduler. 
+Nella funzione initializePassUpVector(), abbiamo mantenuto 0x20020000 + (cpu_id * PAGESIZE) per permettere una corretta gestione della memoria nel programma. Nell'inizializzaione dei processi, per evitare rindondanze, non resettiamo tutti i parametri del PCB che vengono già resettati nella funzione allocPcb().
 
 Implementazione Scheduler:
 Lo Scheduler gestisce la coda ready tramite MUTEX_GLOBAL, in modo da accedere in mutua esclusione alla coda dei processi pronti evitando race condition tra le CPU; viene usato un ciclo while infinito perché, una volta avviato, deve restare pronto a disptachare nuovi processi o entrare in idle finché non ne arrivano di nuovi, delegando al timer e agli interrupt l’innesco di ogni nuovo dispatch.
