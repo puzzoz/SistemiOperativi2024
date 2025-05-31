@@ -1,4 +1,4 @@
-# This is the list of [Project Name]'s contributors.
+# This is the list of MultiPandOS's contributors.
 
 Dattilo Elena
 Guidotti Andrea
