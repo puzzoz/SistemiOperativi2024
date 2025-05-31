@@ -1,7 +1,6 @@
 #include "./headers/initial.h"
 #include "../phase1/headers/asl.h"
 #include "./headers/scheduler.h"
-#include "headers/initial.h"
 
 //LEVEL 3 GLOBAL VARIABLES
 
@@ -39,7 +38,8 @@ void initializePassUpVector() {
         if (cpu_id == 0) {
             passupvector->tlb_refill_stackPtr = KERNELSTACK;
         } else {
-            passupvector->tlb_refill_stackPtr = RAMSTART + ((64 + cpu_id) * PAGESIZE);
+            //riga delle vecchie specifiche:
+            passupvector->tlb_refill_stackPtr = 0x20020000 + (cpu_id * PAGESIZE);
         }
         passupvector->exception_handler = (memaddr)exceptionHandler;
 
@@ -74,7 +74,6 @@ extern void test();
 void instantiateProcess() {
     pcb_t *newProcess = allocPcb();
 
-
     // inizializzo stato processore
     newProcess->p_s.status = MSTATUS_MPIE_MASK | MSTATUS_MPP_M; // attivo interrupts and kernel mode
     newProcess->p_s.mie = MIE_ALL; // attivo tutti gli interrupts
@@ -108,27 +107,27 @@ int main(){
     initPcbs();
     initASL();
     initializeVariables();
-
-
+    interruptRouting();
     instantiateProcess();
 
     LDIT(PSECOND * (*((memaddr *)TIMESCALEADDR)));
 
-
-    for (int i = 0; i < NCPU-1; i++) {
-        currentProcess[i] = allocPcb();
-        currentProcess[i]->p_s.status = MSTATUS_MPP_M;
-        currentProcess[i]->p_s.pc_epc = (memaddr) scheduler;
-        if(i>=1){
-            currentProcess[i]->p_s.reg_sp=0x20020000 + (i * PAGESIZE);
+    for (int i = 0; i < NCPU; i++) {
+        pcb_t *p = allocPcb();
+        currentProcess[i] = p;
+        //metto in kernel‐mode con MPIE=1
+        p->p_s.status = MSTATUS_MPIE_MASK | MSTATUS_MPP_M;
+        //disabilito interrupt locali
+        p->p_s.mie    = 0;
+        p->p_s.pc_epc = (memaddr)scheduler;
+        if (i >= 1) {
+            //inizializzo passUpVector e SP per la CPU i
+            INITCPU(i, &p->p_s);
+            p->p_s.reg_sp = 0x20020000 + (i * PAGESIZE);
         }
-        currentProcess[i]->p_s.mie = 0;
+        //la CPU i parte subito in scheduler()
     }
-
     scheduler();
-    return 1;
 }
-
-pcb_t** current_process() { return (getPRID() < NCPU) ? &currentProcess[getPRID()] : NULL; }
 
 int *device_semaphores(unsigned int devNo) {return (devNo <= PSEUDO_CLOCK_SEM) ? &deviceSemaphores[devNo] : NULL; }
