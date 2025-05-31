@@ -283,8 +283,7 @@ void exceptionHandler() {
     }
 }
 
-// commentato fino a fase 3 per non modificare il file p2test.c
-/*void uTLB_RefillHandler() {
+void uTLB_RefillHandler() {
 
     int prid = getPRID();
     setENTRYHI(0x80000000);
@@ -292,4 +291,4 @@ void exceptionHandler() {
     TLBWR();
 
     LDST(GET_EXCEPTION_STATE_PTR(prid));
-}*/
+}
